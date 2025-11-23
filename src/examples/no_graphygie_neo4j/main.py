@@ -2,6 +2,7 @@ from neo4j import GraphDatabase
 from neo4j_graphrag.retrievers import VectorRetriever
 from neo4j_graphrag.llm import OpenAILLM
 from neo4j_graphrag.generation import GraphRAG
+from neo4j_graphrag.generation.prompts import RagTemplate
 from neo4j_graphrag.embeddings import OllamaEmbeddings
 from dotenv import load_dotenv
 from util import unwrap
@@ -9,39 +10,49 @@ from util import unwrap
 import logging
 import os
 
+load_dotenv()
+
+NEO4J_URI = unwrap(os.getenv("NEO4J_URI"))
+NEO4J_USERNAME = unwrap(os.getenv("NEO4J_USERNAME"))
+NEO4J_PASSWORD = unwrap(os.getenv("NEO4J_PASSWORD"))
+NEO4J_DATABASE = unwrap(os.getenv("NEO4J_DATABASE"))
+NEO4J_EMBED_INDEX = unwrap(os.getenv("NEO4J_EMBED_INDEX"))
+
+OLLAMA_URI = unwrap(os.getenv("OLLAMA_URI"))
+EMBEDDING_MODEL = unwrap(os.getenv("EMBEDDING_MODEL"))
+
+OPENROUTER_URI = unwrap(os.getenv("OPENROUTER_URI"))
+OPENROUTER_TOKEN = unwrap(os.getenv("OPENROUTER_TOKEN"))
+
 
 def main() -> None:
-    load_dotenv()
     logging.basicConfig(
         level=logging.INFO, format="{levelname}:{name}:\n{message}", style="{"
     )
 
     # Connect to Neo4j database
     driver = GraphDatabase.driver(
-        unwrap(os.getenv("NEO4J_URI")),
-        auth=(unwrap(os.getenv("NEO4J_USERNAME"), unwrap(os.getenv("NEO4J_PASSWORD")))),
+        NEO4J_URI,
+        auth=(NEO4J_USERNAME, NEO4J_PASSWORD),
     )
 
     # 2. Retriever
     # Create Embedder object, needed to convert the user question (text) to a
     # vector
-    embedder = OllamaEmbeddings(
-        host=unwrap(os.getenv("OLLAMA_URI")), model="embeddinggemma:latest"
-    )
+    embedder = OllamaEmbeddings(host=OLLAMA_URI, model=EMBEDDING_MODEL)
 
     # Initialize the retriever
     retriever = VectorRetriever(
         driver,
-        unwrap(os.getenv("NEO4J_INDEX")),
+        NEO4J_EMBED_INDEX,
         embedder,
-        neo4j_database=os.getenv("NEO4J_DATABASE"),
+        neo4j_database=NEO4J_DATABASE,
     )
 
     # 3. LLM
-    # Note: the OPENAI_API_KEY must be in the env vars
     llm = OpenAILLM(
-        host=unwrap(os.getenv("OPENROUTER_URI")),
-        api_key=unwrap(os.getenv("OPENROUTER_TOKEN")),
+        base_url=OPENROUTER_URI,
+        api_key=OPENROUTER_TOKEN,
         model_name="qwen/qwen3-235b-a22b:free",
         model_params={"temperature": 0},
     )
@@ -49,10 +60,17 @@ def main() -> None:
     # Initialize the RAG pipeline
     rag = GraphRAG(retriever=retriever, llm=llm)
 
+    prompt_template = RagTemplate()
+    prompt_template.DEFAULT_SYSTEM_INSTRUCTIONS = "Base your answer *primarily* on the information provided in the context below. If the context is empty or does not contain the necessary information to answer the question, use your internal knowledge."
+
     # Query the graph
     query_text = "What are the main cognitive and behavioral changes associated with Frontal Lobe Syndrome?"
-    response = rag.search(query_text=query_text, retriever_config={"top_k": 5})
+    response = rag.search(
+        query_text=query_text, retriever_config={"top_k": 5}, return_context=True
+    )
     print(response.answer)
+    print()
+    print(response.retriever_result)
 
 
 if __name__ == "__main__":

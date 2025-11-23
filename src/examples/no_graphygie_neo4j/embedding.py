@@ -14,11 +14,14 @@ load_dotenv()
 # Configuration
 NUM_THREADS = 50
 BATCH_SIZE = 100
+
 NEO4J_URI = unwrap(os.getenv("NEO4J_URI"))
 NEO4J_USERNAME = unwrap(os.getenv("NEO4J_USERNAME"))
 NEO4J_PASSWORD = unwrap(os.getenv("NEO4J_PASSWORD"))
 NEO4J_DATABASE = unwrap(os.getenv("NEO4J_DATABASE"))
+
 OLLAMA_URI = unwrap(os.getenv("OLLAMA_URI"))
+EMBEDDING_MODEL = unwrap(os.getenv("EMBEDDING_MODEL"))
 
 # Lock for shared statistics
 stats_lock = Lock()
@@ -27,7 +30,7 @@ stats = {"processed": 0, "errors": 0, "start_time": time.time()}
 
 def create_embedder():
     """ "Creates an embedder for each thread"""
-    return OllamaEmbeddings(base_url=OLLAMA_URI, model="embeddinggemma:latest")
+    return OllamaEmbeddings(base_url=OLLAMA_URI, model=EMBEDDING_MODEL)
 
 
 def create_driver():
