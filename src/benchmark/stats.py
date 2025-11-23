@@ -1,136 +1,128 @@
 import json
 import os
+import re
 from pathlib import Path
 from statistics import mean, median
-from typing import Any
+from typing import Any, Union
+from dataclasses import dataclass
 
 
 CURRENT_DIR: str = os.path.dirname(os.path.abspath(__file__))
 RESULTS_DIR: str = os.path.join(CURRENT_DIR, "results")
 BENCHMARK_FILE: str = os.path.join(CURRENT_DIR, "benchmark.json")
+EMOJI: list[str] = ["🔴", "🟠", "🟡", "🟢", "🔵", "🟣", "🟤", "⚫", "⚪"]
+
+
+@dataclass()
+class ExtraStatsGraph:
+    errors: list[int]
+    nodes: list[int]
+    edges: list[int]
+
+    def __add__(self, other):
+        """Add two ExtraStatsGraph objects by concatenating their lists."""
+
+        if not isinstance(other, ExtraStatsGraph):
+            return NotImplemented
+
+        return ExtraStatsGraph(
+            errors=self.errors + other.errors,
+            nodes=self.nodes + other.nodes,
+            edges=self.edges + other.edges,
+        )
+
+
+ExtraStats = Union[ExtraStatsGraph]
+
+
+class Stats:
+    method: str
+    correct: int
+    total: int
+
+    extra: None | ExtraStats
+
+    def __init__(self, method: str) -> None:
+        self.method = method
+        self.correct = 0
+        self.total = 0
+
+        self.extra = None
+
+    def add(self, total: int, correct: int) -> None:
+        """Add total to the total count and correct to the correct count"""
+
+        self.total += total
+        self.correct += correct
+
+    def add_extra(self, extra: None | ExtraStats) -> None:
+        """ "Add extra statistics to the current extra statistics"""
+
+        if extra is None:
+            return
+        if self.extra is None:
+            self.extra = extra
+        else:
+            self.extra += extra
+
 
 def load_benchmark(benchmark_path: str) -> Any:
     """Load the benchmark.json file"""
-    with open(benchmark_path, 'r', encoding='utf-8') as f:
+
+    with open(benchmark_path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
-def analyze_results(results_dir: str, benchmark_path: str):
-    """Analyze native and RAG results"""
-    
-    # Load benchmark
-    benchmark: Any = load_benchmark(benchmark_path)
-    
-    # Statistics
-    native_correct: dict[str, int] = dict()
-    native_total: dict[str, int] = dict()
-    rag_correct: dict[str, int] = dict()
-    rag_total: dict[str, int] = dict()
+def display_one_stats(info: Stats, ind: int) -> None:
+    """Display one statistic"""
 
-    # For RAG metrics
-    rag_errors: dict[str, list[int]] = dict()
-    rag_nodes: dict[str, list[int]] = dict()
-    rag_edges: dict[str, list[int]] = dict()
-    
-    # Browse all datasets
-    results_path = Path(results_dir)
-    
-    for dataset_dir in results_path.iterdir():
-        if not dataset_dir.is_dir():
-            continue
-            
-        dataset_name: str = dataset_dir.name
-        
-        if dataset_name not in benchmark:
-            print(f"⚠️  Dataset '{dataset_name}' not found in benchmark.json")
-            continue
+    accuracy: float = (info.correct / info.total * 100) if info.total > 0 else 0
+    print(f"{EMOJI[ind]} {info.method.upper()}")
+    print(f"  ✅ Correct answers: {info.correct}/{info.total}")
+    print(f"  📈 Accuracy rate: {accuracy:.2f}%")
+    print()
 
-        native_correct[dataset_name] = 0
-        native_total[dataset_name] = 0
-        rag_correct[dataset_name] = 0
-        rag_total[dataset_name] = 0
+    match info.extra:
+        case None:
+            pass
+        case ExtraStatsGraph(errors, nodes, edges):
+            print(f"  📉 {info.method.upper()} METRICS")
+            print(
+                f"     Errors     - Mean: {mean(errors):.2f} | Median: {median(errors):.2f}"
+            )
+            print(
+                f"     Nodes      - Mean: {mean(nodes):.2f} | Median: {median(nodes):.2f}"
+            )
+            print(
+                f"     Edges      - Mean: {mean(edges):.2f} | Median: {median(edges):.2f}"
+            )
+            print()
 
-        rag_errors[dataset_name] = list()
-        rag_nodes[dataset_name] = list()
-        rag_edges[dataset_name] = list()
 
-        
-        # Browse result files
-        for result_file in dataset_dir.glob("*.json"):
-            filename: str = result_file.name
-            
-            # Identify type (native or rag) and question
-            if filename.startswith("native_"):
-                question_name: str = filename[7:-5]  # Remove "native_" and ".json"
-                result_type: str = "native"
-            elif filename.startswith("rag_"):
-                question_name: str = filename[4:-5]  # Remove "rag_" and ".json"
-                result_type: str = "rag"
-            else:
-                continue
-            
-            # Check if question exists in benchmark
-            if question_name not in benchmark[dataset_name]:
-                print(f"⚠️  Question '{question_name}' not found in benchmark[{dataset_name}]")
-                continue
-            
-            # Load result
-            with open(result_file, 'r', encoding='utf-8') as f:
-                result: Any = json.load(f)
-            
-            # Get correct answer
-            correct_answer: str = benchmark[dataset_name][question_name]["answer"]
-            user_response: str = result.get("response")
-            
-            # Count results
-            if result_type == "native":
-                native_total[dataset_name] += 1
-                if user_response == correct_answer:
-                    native_correct[dataset_name] += 1
-            else:  # rag
-                rag_total[dataset_name] += 1
-                if user_response == correct_answer:
-                    rag_correct[dataset_name] += 1
-                
-                # Collect RAG metrics
-                rag_errors[dataset_name].append(result.get("error", 0))
-                rag_nodes[dataset_name].append(result.get("nodes", 0))
-                rag_edges[dataset_name].append(result.get("edges", 0))
+def display_stats(stats: dict[str, dict[str, Stats]]) -> None:
+    """Display all the statistics"""
 
-    # Display results
     print("=" * 60)
     print("📊 ANALYSIS RESULTS")
     print("=" * 60)
     print()
 
-    for name in native_correct.keys():
+    stats_methods: dict[str, list[Stats]] = dict()
 
+    for dataset, infos in sorted(stats.items(), key=lambda e: e[0]):
         print("=" * 45)
-        print(f"ANALYSIS RESULTS FOR {name}")
+        print(f"ANALYSIS RESULTS FOR {dataset}")
         print("=" * 45)
         print()
-    
-        # Calculate accuracy rates
-        native_accuracy: float = (native_correct[name] / native_total[name] * 100) if native_total[name] > 0 else 0
-        rag_accuracy: float = (rag_correct[name] / rag_total[name] * 100) if rag_total[name] > 0 else 0
-     
-        print("🔵 NATIVE")
-        print(f"  ✓ Correct answers: {native_correct[name]}/{native_total[name]}")
-        print(f"  📈 Accuracy rate: {native_accuracy:.2f}%")
-        print()
-    
-        print("🟢 RAG")
-        print(f"  ✓ Correct answers: {rag_correct[name]}/{rag_total[name]}")
-        print(f"  📈 Accuracy rate: {rag_accuracy:.2f}%")
-        print()
-    
-        if rag_errors[name]:
-            print("📉 RAG METRICS")
-            print(f"  Errors     - Mean: {mean(rag_errors[name]):.2f} | Median: {median(rag_errors[name]):.2f}")
-            print(f"  Nodes      - Mean: {mean(rag_nodes[name]):.2f} | Median: {median(rag_nodes[name]):.2f}")
-            print(f"  Edges      - Mean: {mean(rag_edges[name]):.2f} | Median: {median(rag_edges[name]):.2f}")
-        print()
-    
+
+        for k, (method, info) in enumerate(sorted(infos.items(), key=lambda e: e[0])):
+            if method in stats_methods.keys():
+                stats_methods[method].append(info)
+            else:
+                stats_methods[method] = [info]
+
+            display_one_stats(info, k)
+
         print("=" * 45)
         print()
 
@@ -139,41 +131,110 @@ def analyze_results(results_dir: str, benchmark_path: str):
     print("=" * 45)
     print()
 
-    # Calculate accuracy rates
-    native_accuracy: float = (sum(native_correct.values()) / sum(native_total.values()) * 100) if sum(native_total.values()) > 0 else 0
-    rag_accuracy: float = (sum(rag_correct.values()) / sum(rag_total.values()) * 100) if sum(rag_total.values()) > 0 else 0
+    for k, (method, infos) in enumerate(
+        sorted(stats_methods.items(), key=lambda e: e[0])
+    ):
+        s: Stats = Stats(method)
 
-    print("🔵 NATIVE")
-    print(f"  ✓ Correct answers: {sum(native_correct.values())}/{sum(native_total.values())}")
-    print(f"  📈 Accuracy rate: {native_accuracy:.2f}%")
-    print()
+        correct: int = sum([info.correct for info in infos])
+        total: int = sum([info.total for info in infos])
+        extra: None | ExtraStats = None
 
-    print("🟢 RAG")
-    print(f"  ✓ Correct answers: {sum(rag_correct.values())}/{sum(rag_total.values())}")
-    print(f"  📈 Accuracy rate: {rag_accuracy:.2f}%")
-    print()
+        for info in infos:
+            if info.extra is None:
+                continue
+            if extra is None:
+                extra = info.extra
+            extra += info.extra
 
-    if rag_errors:
-        print("📉 RAG METRICS")
-        print(f"  Errors     - Mean: {mean(sum(rag_errors.values(), [])):.2f} | Median: {median(sum(rag_errors.values(), [])):.2f}")
-        print(f"  Nodes      - Mean: {mean(sum(rag_nodes.values(), [])):.2f} | Median: {median(sum(rag_nodes.values(), [])):.2f}")
-        print(f"  Edges      - Mean: {mean(sum(rag_edges.values(), [])):.2f} | Median: {median(sum(rag_edges.values(), [])):.2f}")
-    print()
+        s.add(total, correct)
+        s.add_extra(extra)
+
+        display_one_stats(s, k)
 
     print("=" * 60)
 
+
+def analyze_results(results_dir: str, benchmark_path: str) -> None:
+    """Analyze all results"""
+
+    benchmark: Any = load_benchmark(benchmark_path)
+
+    stats: dict[str, dict[str, Stats]] = dict()
+
+    results_path = Path(results_dir)
+
+    for dataset_dir in results_path.iterdir():
+        if not dataset_dir.is_dir():
+            continue
+
+        dataset_name: str = dataset_dir.name
+
+        if dataset_name not in benchmark:
+            print(f"⚠️  Dataset '{dataset_name}' not found in benchmark.json")
+            continue
+
+        stats[dataset_name] = dict()
+
+        for result_file in dataset_dir.glob("*.json"):
+            filename: str = result_file.name
+
+            pattern = r"^(.+?)_(.+)\.json$"
+            match = re.match(pattern, filename)
+
+            if match:
+                result_type: str = match.group(1)
+                question_name: str = match.group(2)
+            else:
+                continue
+
+            if question_name not in benchmark[dataset_name]:
+                print(
+                    f"⚠️  Question '{question_name}' not found in benchmark[{dataset_name}]"
+                )
+                continue
+
+            with open(result_file, "r", encoding="utf-8") as f:
+                result: Any = json.load(f)
+
+            correct_answer: str = benchmark[dataset_name][question_name]["answer"]
+            user_response: str = result.get("response")
+
+            match result_type:
+                case "rag":
+                    if result_type not in stats[dataset_name].keys():
+                        stats[dataset_name][result_type] = Stats(result_type)
+                    stats[dataset_name][result_type].add(
+                        1, 1 if user_response == correct_answer else 0
+                    )
+                    stats[dataset_name][result_type].add_extra(
+                        ExtraStatsGraph(
+                            [result.get("error", 0)],
+                            [result.get("nodes", 0)],
+                            [result.get("edges", 0)],
+                        )
+                    )
+                case _:
+                    if result_type not in stats[dataset_name].keys():
+                        stats[dataset_name][result_type] = Stats(result_type)
+                    stats[dataset_name][result_type].add(
+                        1, 1 if user_response == correct_answer else 0
+                    )
+
+    display_stats(stats)
+
+
 def main() -> None:
-    # Check if files exist
     if not os.path.exists(RESULTS_DIR):
         print(f"❌ Error: Directory '{RESULTS_DIR}' does not exist")
         exit(1)
-    
+
     if not os.path.exists(BENCHMARK_FILE):
         print(f"❌ Error: File '{BENCHMARK_FILE}' does not exist")
         exit(1)
-    
-    # Run analysis
+
     analyze_results(RESULTS_DIR, BENCHMARK_FILE)
+
 
 if __name__ == "__main__":
     main()

@@ -165,7 +165,7 @@ def main() -> None:
                                 benchmark(base, n, val["question"], val["options"]),
                             )
                         }
-                        break  
+                        break
                     except Exception as e:
                         print(str(e))
                         print("Retry")
@@ -184,7 +184,7 @@ def main() -> None:
                             benchmark(base, g, val["question"], val["options"]),
                         )
                         data["response"] = response
-                        break  
+                        break
                     except Exception as e:
                         print(str(e))
                         print("Retry")
