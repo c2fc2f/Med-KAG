@@ -15,22 +15,22 @@ def load_benchmark(benchmark_path: str) -> Any:
         return json.load(f)
 
 
-def analyze_results(results_dir: str, benchmark_path: str) -> dict[str, Any]:
+def analyze_results(results_dir: str, benchmark_path: str):
     """Analyze native and RAG results"""
     
     # Load benchmark
     benchmark: Any = load_benchmark(benchmark_path)
     
     # Statistics
-    native_correct: int = 0
-    native_total: int = 0
-    rag_correct: int = 0
-    rag_total: int = 0
-    
+    native_correct: dict[str, int] = dict()
+    native_total: dict[str, int] = dict()
+    rag_correct: dict[str, int] = dict()
+    rag_total: dict[str, int] = dict()
+
     # For RAG metrics
-    rag_errors: list[int] = []
-    rag_nodes: list[int] = []
-    rag_edges: list[int] = []
+    rag_errors: dict[str, list[int]] = dict()
+    rag_nodes: dict[str, list[int]] = dict()
+    rag_edges: dict[str, list[int]] = dict()
     
     # Browse all datasets
     results_path = Path(results_dir)
@@ -44,6 +44,16 @@ def analyze_results(results_dir: str, benchmark_path: str) -> dict[str, Any]:
         if dataset_name not in benchmark:
             print(f"⚠️  Dataset '{dataset_name}' not found in benchmark.json")
             continue
+
+        native_correct[dataset_name] = 0
+        native_total[dataset_name] = 0
+        rag_correct[dataset_name] = 0
+        rag_total[dataset_name] = 0
+
+        rag_errors[dataset_name] = list()
+        rag_nodes[dataset_name] = list()
+        rag_edges[dataset_name] = list()
+
         
         # Browse result files
         for result_file in dataset_dir.glob("*.json"):
@@ -74,69 +84,83 @@ def analyze_results(results_dir: str, benchmark_path: str) -> dict[str, Any]:
             
             # Count results
             if result_type == "native":
-                native_total += 1
+                native_total[dataset_name] += 1
                 if user_response == correct_answer:
-                    native_correct += 1
+                    native_correct[dataset_name] += 1
             else:  # rag
-                rag_total += 1
+                rag_total[dataset_name] += 1
                 if user_response == correct_answer:
-                    rag_correct += 1
+                    rag_correct[dataset_name] += 1
                 
                 # Collect RAG metrics
-                rag_errors.append(result.get("error", 0))
-                rag_nodes.append(result.get("nodes", 0))
-                rag_edges.append(result.get("edges", 0))
-    
-    # Calculate accuracy rates
-    native_accuracy: float = (native_correct / native_total * 100) if native_total > 0 else 0
-    rag_accuracy: float = (rag_correct / rag_total * 100) if rag_total > 0 else 0
-    
+                rag_errors[dataset_name].append(result.get("error", 0))
+                rag_nodes[dataset_name].append(result.get("nodes", 0))
+                rag_edges[dataset_name].append(result.get("edges", 0))
+
     # Display results
     print("=" * 60)
     print("📊 ANALYSIS RESULTS")
     print("=" * 60)
     print()
+
+    for name in native_correct.keys():
+
+        print("=" * 45)
+        print(f"ANALYSIS RESULTS FOR {name}")
+        print("=" * 45)
+        print()
     
+        # Calculate accuracy rates
+        native_accuracy: float = (native_correct[name] / native_total[name] * 100) if native_total[name] > 0 else 0
+        rag_accuracy: float = (rag_correct[name] / rag_total[name] * 100) if rag_total[name] > 0 else 0
+     
+        print("🔵 NATIVE")
+        print(f"  ✓ Correct answers: {native_correct[name]}/{native_total[name]}")
+        print(f"  📈 Accuracy rate: {native_accuracy:.2f}%")
+        print()
+    
+        print("🟢 RAG")
+        print(f"  ✓ Correct answers: {rag_correct[name]}/{rag_total[name]}")
+        print(f"  📈 Accuracy rate: {rag_accuracy:.2f}%")
+        print()
+    
+        if rag_errors[name]:
+            print("📉 RAG METRICS")
+            print(f"  Errors     - Mean: {mean(rag_errors[name]):.2f} | Median: {median(rag_errors[name]):.2f}")
+            print(f"  Nodes      - Mean: {mean(rag_nodes[name]):.2f} | Median: {median(rag_nodes[name]):.2f}")
+            print(f"  Edges      - Mean: {mean(rag_edges[name]):.2f} | Median: {median(rag_edges[name]):.2f}")
+        print()
+    
+        print("=" * 45)
+        print()
+
+    print("=" * 45)
+    print("ANALYSIS RESULTS TOTAL")
+    print("=" * 45)
+    print()
+
+    # Calculate accuracy rates
+    native_accuracy: float = (sum(native_correct.values()) / sum(native_total.values()) * 100) if sum(native_total.values()) > 0 else 0
+    rag_accuracy: float = (sum(rag_correct.values()) / sum(rag_total.values()) * 100) if sum(rag_total.values()) > 0 else 0
+
     print("🔵 NATIVE")
-    print(f"  ✓ Correct answers: {native_correct}/{native_total}")
+    print(f"  ✓ Correct answers: {sum(native_correct.values())}/{sum(native_total.values())}")
     print(f"  📈 Accuracy rate: {native_accuracy:.2f}%")
     print()
-    
+
     print("🟢 RAG")
-    print(f"  ✓ Correct answers: {rag_correct}/{rag_total}")
+    print(f"  ✓ Correct answers: {sum(rag_correct.values())}/{sum(rag_total.values())}")
     print(f"  📈 Accuracy rate: {rag_accuracy:.2f}%")
     print()
-    
+
     if rag_errors:
         print("📉 RAG METRICS")
-        print(f"  Errors     - Mean: {mean(rag_errors):.2f} | Median: {median(rag_errors):.2f}")
-        print(f"  Nodes      - Mean: {mean(rag_nodes):.2f} | Median: {median(rag_nodes):.2f}")
-        print(f"  Edges      - Mean: {mean(rag_edges):.2f} | Median: {median(rag_edges):.2f}")
+        print(f"  Errors     - Mean: {mean(sum(rag_errors.values(), [])):.2f} | Median: {median(sum(rag_errors.values(), [])):.2f}")
+        print(f"  Nodes      - Mean: {mean(sum(rag_nodes.values(), [])):.2f} | Median: {median(sum(rag_nodes.values(), [])):.2f}")
+        print(f"  Edges      - Mean: {mean(sum(rag_edges.values(), [])):.2f} | Median: {median(sum(rag_edges.values(), [])):.2f}")
     print()
-    
+
     print("=" * 60)
-    
-    # Return results for programmatic use
-    return {
-        "native": {
-            "correct": native_correct,
-            "total": native_total,
-            "accuracy": native_accuracy
-        },
-        "rag": {
-            "correct": rag_correct,
-            "total": rag_total,
-            "accuracy": rag_accuracy,
-            "metrics": {
-                "errors": {"mean": mean(rag_errors) if rag_errors else 0, 
-                          "median": median(rag_errors) if rag_errors else 0},
-                "nodes": {"mean": mean(rag_nodes) if rag_nodes else 0, 
-                         "median": median(rag_nodes) if rag_nodes else 0},
-                "edges": {"mean": mean(rag_edges) if rag_edges else 0, 
-                         "median": median(rag_edges) if rag_edges else 0}
-            }
-        }
-    }
 
 def main() -> None:
     # Check if files exist
@@ -149,7 +173,7 @@ def main() -> None:
         exit(1)
     
     # Run analysis
-    results: dict[str, Any] = analyze_results(RESULTS_DIR, BENCHMARK_FILE)
+    analyze_results(RESULTS_DIR, BENCHMARK_FILE)
 
 if __name__ == "__main__":
     main()
