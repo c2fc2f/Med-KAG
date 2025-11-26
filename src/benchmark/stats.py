@@ -93,8 +93,16 @@ def display_one_stats(info: Stats, ind: int) -> None:
             print(
                 f"     Nodes      - Mean: {mean(nodes):.2f} | Median: {median(nodes):.2f}"
             )
+            with_nodes = sum(1 for n in nodes if n >= 1)
+            print(
+                f"                - Nodes ≥ 1: {with_nodes}/{len(nodes)} ({with_nodes/len(nodes)*100:.1f}%)"
+            )
             print(
                 f"     Edges      - Mean: {mean(edges):.2f} | Median: {median(edges):.2f}"
+            )
+            with_edges = sum(1 for n in edges if n >= 1)
+            print(
+                f"                - Edges ≥ 1: {with_edges}/{len(edges)} ({with_edges/len(edges)*100:.1f}%)"
             )
             print()
 
@@ -145,7 +153,8 @@ def display_stats(stats: dict[str, dict[str, Stats]]) -> None:
                 continue
             if extra is None:
                 extra = info.extra
-            extra += info.extra
+            else:
+                extra += info.extra
 
         s.add(total, correct)
         s.add_extra(extra)
