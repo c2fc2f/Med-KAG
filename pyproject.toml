@@ -34,7 +34,8 @@ graphygie-openrouter = "examples.openrouter.main:main"
 no-graphygie-neo4j = "examples.no_graphygie_neo4j.main:main"
 no-graphygie-neo4j-embedding = "examples.no_graphygie_neo4j.embedding:main"
 
-benchmark = "benchmark.main:main"
+benchmark-native = "benchmark.native:main"
+benchmark-rag = "benchmark.rag:main"
 benchmark-stats = "benchmark.stats:main"
 
 

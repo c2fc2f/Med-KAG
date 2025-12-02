@@ -6,12 +6,13 @@ structured pipeline.
 
 import logging
 from benchmark.retrieval import GraphExtra
+from benchmark.llm import LLMExtra
 from graphygie.llm import LLM
 from graphygie.llm.chat import Chat
 from typing import Callable, Optional
 
 
-class BasicGeneratorExtra(LLM):
+class BasicGeneratorExtra(LLMExtra):
     """
     A pipeline-based generator that uses two LLMs:
     - A retriever LLM to fetch or infer relevant context.
@@ -42,16 +43,14 @@ class BasicGeneratorExtra(LLM):
         self._maker = maker
         self._info = None
 
-    @property
     def info(self) -> Optional[dict[str, int]]:
-        """Returns statistics from the last query"""
         return self._info
 
     def chat(self, chat: Chat = list()) -> str:
         logger: logging.Logger = logging.getLogger(__name__)
 
         result: str = self._retriever.chat(chat)
-        self._info = self._retriever.info
+        self._info = self._retriever.info()
         chat = self._maker(self._chat, result) + chat
 
         logger.info(result)

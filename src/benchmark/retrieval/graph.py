@@ -8,12 +8,13 @@ database.
 
 from typing import Optional
 from benchmark.retrieval.database.neo4j import Neo4jExtra
+from benchmark.llm import LLMExtra
 from graphygie.llm import LLM
 from graphygie.llm.chat import Chat
 import logging
 
 
-class GraphExtra(LLM):
+class GraphExtra(LLMExtra):
     """
     A graph-based retriever that uses an LLM to generate a query from a chat
     history, then executes that query against a graph database.
@@ -35,9 +36,7 @@ class GraphExtra(LLM):
         self._database: Neo4jExtra = database
         self._info = None
 
-    @property
     def info(self) -> Optional[dict[str, int]]:
-        """Returns statistics from the last query"""
         return self._info
 
     def chat(self, chat: Chat = list()) -> str:
