@@ -48,7 +48,7 @@ def base_grahygie() -> tuple[GraphExtra, LLM]:
             Message(
                 role="system",
                 content=read_to_string(
-                    os.path.join(CURRENT_DIR, "resources/prompt/retrieval_system.md")
+                    os.path.join(CURRENT_DIR, "../resources/prompt/retrieval_system.md")
                 ),
             )
         ],
@@ -80,7 +80,7 @@ def graphygie(
                 content=system_prompt(
                     base=read_to_string(
                         os.path.join(
-                            CURRENT_DIR, "resources/prompt/generator_system_native.md"
+                            CURRENT_DIR, "../resources/prompt/generator_system_native.md"
                         )
                     ),
                     choices=choices,
@@ -92,9 +92,9 @@ def graphygie(
 
 
 def main() -> None:
-    bench: Any = json.load(open(os.path.join(CURRENT_DIR, "benchmark.json")))
-    base: str = read_to_string(os.path.join(CURRENT_DIR, "resources/prompt/user.md"))
-    results_dir = os.path.join(CURRENT_DIR, "results")
+    bench: Any = json.load(open(os.path.join(CURRENT_DIR, "../benchmark.json")))
+    base: str = read_to_string(os.path.join(CURRENT_DIR, "../resources/prompt/user.md"))
+    results_dir = os.path.join(CURRENT_DIR, "../results")
 
     os.makedirs(results_dir, exist_ok=True)
 

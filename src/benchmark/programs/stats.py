@@ -8,8 +8,8 @@ from dataclasses import dataclass
 
 
 CURRENT_DIR: str = os.path.dirname(os.path.abspath(__file__))
-RESULTS_DIR: str = os.path.join(CURRENT_DIR, "results")
-BENCHMARK_FILE: str = os.path.join(CURRENT_DIR, "benchmark.json")
+RESULTS_DIR: str = os.path.join(CURRENT_DIR, "../results")
+BENCHMARK_FILE: str = os.path.join(CURRENT_DIR, "../benchmark.json")
 EMOJI: list[str] = ["🔴", "🟠", "🟡", "🟢", "🔵", "🟣", "🟤", "⚫", "⚪"]
 
 
@@ -77,7 +77,7 @@ def display_one_stats(info: Stats, ind: int) -> None:
     """Display one statistic"""
 
     accuracy: float = (info.correct / info.total * 100) if info.total > 0 else 0
-    print(f"{EMOJI[ind]} {info.method.upper().replace("-", " ")}")
+    print(f"{EMOJI[ind]} {info.method.upper().replace('-', ' ')}")
     print(f"  ✅ Correct answers: {info.correct}/{info.total}")
     print(f"  📈 Accuracy rate: {accuracy:.2f}%")
     print()
@@ -86,7 +86,7 @@ def display_one_stats(info: Stats, ind: int) -> None:
         case None:
             pass
         case ExtraStatsGraph(errors, nodes, edges):
-            print(f"  📉 {info.method.upper().replace("-", " ")} METRICS")
+            print(f"  📉 {info.method.upper().replace('-', ' ')} METRICS")
             print(
                 f"     Errors     - Mean: {mean(errors):.2f} | Median: {median(errors):.2f}"
             )
