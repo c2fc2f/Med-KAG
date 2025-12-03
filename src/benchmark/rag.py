@@ -100,7 +100,7 @@ def main() -> None:
 
     (retrieval, generator_llm) = base_grahygie()
     benchmark(
-        "rag",
+        "rag-qwen3-235b",
         results_dir,
         bench,
         base,

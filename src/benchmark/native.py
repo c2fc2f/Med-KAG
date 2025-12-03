@@ -47,7 +47,7 @@ def main() -> None:
 
     os.makedirs(results_dir, exist_ok=True)
 
-    benchmark("native", results_dir, bench, base, native)
+    benchmark("native-qwen3-235b", results_dir, bench, base, native)
 
 
 if __name__ == "__main__":
