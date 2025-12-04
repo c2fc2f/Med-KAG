@@ -35,7 +35,7 @@ def native(choices: list[str]) -> LLM:
                 ),
             )
         ],
-        cleaner=lambda s: s[0],
+        cleaner=lambda s: s[0] if len(s) > 0 else s,
         model_params={"options": {"temperature": 0.0}},
     )
 

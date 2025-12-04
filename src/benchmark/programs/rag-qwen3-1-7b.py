@@ -59,7 +59,7 @@ def base_grahygie() -> tuple[GraphExtra, LLM]:
     generator_llm: LLM = Ollama(
         host=OLLAMA_URI,
         model="qwen3:1.7b",
-        cleaner=lambda s: s[0],
+        cleaner=lambda s: s[0] if len(s) > 0 else s,
         model_params={"options": {"temperature": 0.0}},
     )
 
