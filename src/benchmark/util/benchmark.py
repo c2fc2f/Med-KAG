@@ -67,12 +67,18 @@ def benchmark(
             ) as f:
                 while True:
                     try:
-                        data = {
-                            "response": cast(
-                                str,
+                        if isinstance(llm, LLMExtra):
+                            (response, data) = cast(
+                                Tuple[str, dict[str, int | str]],
                                 run(base, llm, val["question"], val["options"]),
                             )
-                        }
+                            data["response"] = response
+                        else:
+                            data = {
+                                "response": cast(
+                                    str, run(base, llm, val["question"], val["options"])
+                                )
+                            }
                         break
                     except Exception as e:
                         print(str(e))
