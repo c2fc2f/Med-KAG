@@ -13,6 +13,7 @@ CURRENT_DIR: str = os.path.dirname(os.path.abspath(__file__))
 
 BENCHMARK_MODULES: dict[str, str] = dict()
 
+
 def load_modules():
     """
     Add to BENCHMARK_MODULES the list of module in benchmark.programs
@@ -54,7 +55,7 @@ Available benchmarks:
         "function", choices=BENCHMARK_MODULES.keys(), help="Function to run"
     )
 
-    args = parser.parse_args()
+    args, remaining_args = parser.parse_known_args()
 
     module_path = BENCHMARK_MODULES[args.function]
     benchmark_func = load_benchmark_function(module_path)
@@ -63,9 +64,14 @@ Available benchmarks:
     print("-" * 50)
 
     try:
+        original_argv = sys.argv
+        sys.argv = [sys.argv[0]] + remaining_args
+
         benchmark_func()
+
+        sys.argv = original_argv
     except Exception as e:
-        print(f"Error running benchmark '{args.benchmark}': {e}", file=sys.stderr)
+        print(f"Error running benchmark '{args.function}': {e}", file=sys.stderr)
         sys.exit(1)
 
 

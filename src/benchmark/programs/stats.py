@@ -10,7 +10,35 @@ from dataclasses import dataclass
 CURRENT_DIR: str = os.path.dirname(os.path.abspath(__file__))
 RESULTS_DIR: str = os.path.join(CURRENT_DIR, "../results")
 BENCHMARK_FILE: str = os.path.join(CURRENT_DIR, "../benchmark.json")
-EMOJI: list[str] = ["🔴", "🟠", "🟡", "🟢", "🔵", "🟣", "🟤", "⚫", "⚪"]
+EMOJI: list[str] = [
+    "🔴",
+    "🟠",
+    "🟡",
+    "🟢",
+    "🔵",
+    "🟣",
+    "🟤",
+    "⚫",
+    "⚪",
+    "🟥",
+    "🟧",
+    "🟨",
+    "🟩",
+    "🟦",
+    "🟪",
+    "🟫",
+    "⬛",
+    "⬜",
+    "❤️",
+    "🧡",
+    "💛",
+    "💚",
+    "💙",
+    "💜",
+    "🤎",
+    "🖤",
+    "🤍",
+]
 
 
 @dataclass()
@@ -107,41 +135,41 @@ def display_one_stats(info: Stats, ind: int) -> None:
             print()
 
 
-def display_stats(stats: dict[str, dict[str, Stats]]) -> None:
+def display_stats(
+    stats: dict[str, dict[str, Stats]], methods_ind: dict[str, int]
+) -> None:
     """Display all the statistics"""
 
-    print("=" * 60)
+    print("━" * 60)
     print("📊 ANALYSIS RESULTS")
-    print("=" * 60)
+    print("━" * 60)
     print()
 
     stats_methods: dict[str, list[Stats]] = dict()
 
     for dataset, infos in sorted(stats.items(), key=lambda e: e[0]):
-        print("=" * 45)
+        print("━" * 45)
         print(f"ANALYSIS RESULTS FOR {dataset}")
-        print("=" * 45)
+        print("━" * 45)
         print()
 
-        for k, (method, info) in enumerate(sorted(infos.items(), key=lambda e: e[0])):
+        for method, info in sorted(infos.items(), key=lambda e: e[0]):
             if method in stats_methods.keys():
                 stats_methods[method].append(info)
             else:
                 stats_methods[method] = [info]
 
-            display_one_stats(info, k)
+            display_one_stats(info, methods_ind[method])
 
-        print("=" * 45)
+        print("━" * 45)
         print()
 
-    print("=" * 45)
+    print("━" * 45)
     print("ANALYSIS RESULTS TOTAL")
-    print("=" * 45)
+    print("━" * 45)
     print()
 
-    for k, (method, infos) in enumerate(
-        sorted(stats_methods.items(), key=lambda e: e[0])
-    ):
+    for method, infos in sorted(stats_methods.items(), key=lambda e: e[0]):
         s: Stats = Stats(method)
 
         correct: int = sum([info.correct for info in infos])
@@ -159,9 +187,9 @@ def display_stats(stats: dict[str, dict[str, Stats]]) -> None:
         s.add(total, correct)
         s.add_extra(extra)
 
-        display_one_stats(s, k)
+        display_one_stats(s, methods_ind[method])
 
-    print("=" * 60)
+    print("━" * 60)
 
 
 def analyze_results(results_dir: str, benchmark_path: str) -> None:
@@ -170,6 +198,7 @@ def analyze_results(results_dir: str, benchmark_path: str) -> None:
     benchmark: Any = load_benchmark(benchmark_path)
 
     stats: dict[str, dict[str, Stats]] = dict()
+    methods: list[str] = list()
 
     results_path = Path(results_dir)
 
@@ -186,6 +215,9 @@ def analyze_results(results_dir: str, benchmark_path: str) -> None:
         stats[dataset_name] = dict()
 
         for result_file in dataset_dir.glob("*.json"):
+            if result_file.stat().st_size == 0:
+                continue
+
             filename: str = result_file.name
 
             pattern = r"^(.+?)_(.+)\.json$"
@@ -193,6 +225,8 @@ def analyze_results(results_dir: str, benchmark_path: str) -> None:
 
             if match:
                 result_type: str = match.group(1)
+                if result_type not in methods:
+                    methods.append(result_type)
                 question_name: str = match.group(2)
             else:
                 continue
@@ -209,7 +243,7 @@ def analyze_results(results_dir: str, benchmark_path: str) -> None:
             correct_answer: str = benchmark[dataset_name][question_name]["answer"]
             user_response: str = result.get("response")
 
-            match result_type:
+            match result_type.split("-")[0]:
                 case "rag":
                     if result_type not in stats[dataset_name].keys():
                         stats[dataset_name][result_type] = Stats(result_type)
@@ -230,7 +264,7 @@ def analyze_results(results_dir: str, benchmark_path: str) -> None:
                         1, 1 if user_response == correct_answer else 0
                     )
 
-    display_stats(stats)
+    display_stats(stats, methods_ind={v: k for k, v in enumerate(sorted(methods))})
 
 
 def main() -> None:

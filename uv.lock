@@ -145,7 +145,6 @@ dependencies = [
 [package.optional-dependencies]
 benchmark = [
     { name = "argparse" },
-    { name = "importlib" },
     { name = "python-dotenv" },
     { name = "regex" },
     { name = "tqdm" },
@@ -161,7 +160,6 @@ examples = [
 [package.metadata]
 requires-dist = [
     { name = "argparse", marker = "extra == 'benchmark'", specifier = ">=1.4.0" },
-    { name = "importlib", marker = "extra == 'benchmark'", specifier = ">=1.0.4" },
     { name = "langchain-ollama", marker = "extra == 'examples'", specifier = ">=1.0.0" },
     { name = "neo4j", specifier = ">=5.28.2" },
     { name = "neo4j-graphrag", marker = "extra == 'examples'", specifier = ">=1.10.1" },
@@ -221,12 +219,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/6f/6d/0703ccc57f3a72335
 wheels = [
     { url = "https://files.pythonhosted.org/packages/0e/61/66938bbb5fc52dbdf84594873d5b51fb1f7c7794e9c0f5bd885f30bc507b/idna-3.11-py3-none-any.whl", hash = "sha256:771a87f49d9defaf64091e6e6fe9c18d4833f140bd19464795bc32d966ca37ea", size = 71008, upload-time = "2025-10-12T14:55:18.883Z" },
 ]
-
-[[package]]
-name = "importlib"
-version = "1.0.4"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/31/77/3781f65cafe55480b56914def99022a5d2965a4bb269655c89ef2f1de3cd/importlib-1.0.4.zip", hash = "sha256:b6ee7066fea66e35f8d0acee24d98006de1a0a8a94a8ce6efe73a9a23c8d9826", size = 7074, upload-time = "2016-08-31T19:40:00.728Z" }
 
 [[package]]
 name = "jiter"

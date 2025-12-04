@@ -1,6 +1,6 @@
 from typing import Any
 from dotenv import load_dotenv
-from benchmark.util import benchmark, system_prompt
+from benchmark.util import benchmark, system_prompt, parse_first_argument
 from graphygie.llm import LLM, OpenAI, Message
 from util import (
     read_to_string,
@@ -30,7 +30,8 @@ def native(choices: list[str]) -> LLM:
                 content=system_prompt(
                     base=read_to_string(
                         os.path.join(
-                            CURRENT_DIR, "resources/prompt/generator_system_native.md"
+                            CURRENT_DIR,
+                            "../resources/prompt/generator_system_native.md",
                         )
                     ),
                     choices=choices,
@@ -47,7 +48,14 @@ def main() -> None:
 
     os.makedirs(results_dir, exist_ok=True)
 
-    benchmark("native-qwen3-235b", results_dir, bench, base, native)
+    benchmark(
+        "native-qwen3-235b",
+        results_dir,
+        bench,
+        base,
+        native,
+        start=parse_first_argument(),
+    )
 
 
 if __name__ == "__main__":

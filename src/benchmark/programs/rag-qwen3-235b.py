@@ -1,7 +1,7 @@
 from typing import Any
 from dotenv import load_dotenv
 from benchmark.generation.basic_generator import BasicGeneratorExtra
-from benchmark.util import benchmark, system_prompt
+from benchmark.util import benchmark, system_prompt, parse_first_argument
 from benchmark.retrieval import GraphExtra
 from benchmark.retrieval.database import Neo4jExtra
 from graphygie.llm import LLM, OpenAI, Message
@@ -80,7 +80,8 @@ def graphygie(
                 content=system_prompt(
                     base=read_to_string(
                         os.path.join(
-                            CURRENT_DIR, "../resources/prompt/generator_system_native.md"
+                            CURRENT_DIR,
+                            "../resources/prompt/generator_system_native.md",
                         )
                     ),
                     choices=choices,
@@ -105,6 +106,7 @@ def main() -> None:
         bench,
         base,
         lambda choices: graphygie(retrieval, generator_llm, choices),
+        start=parse_first_argument(),
     )
 
 

@@ -1,5 +1,6 @@
 import time
-from typing import Any, Callable, Tuple, cast
+from typing import Any, Callable, Optional, Tuple, cast
+from itertools import dropwhile
 from benchmark.util import user_prompt
 from benchmark.llm import LLMExtra
 from graphygie.llm import LLM, Message
@@ -9,6 +10,7 @@ from util import (
 
 import json
 import os
+import sys
 
 
 def run(
@@ -39,11 +41,22 @@ def benchmark(
     bench: dict[str, Any],
     base: str,
     model: Callable[[list[str]], LLM],
+    start: Optional[Tuple[str, str]] = None,
 ) -> None:
-    for dataset, val in bench.items():
+    iterator = bench.items()
+    if start is not None:
+        iterator = dropwhile(lambda item: item[0] != start[0], iterator)
+
+    for dataset, val in iterator:
         print("Start dataset:", dataset)
         os.makedirs(f"{results_dir}/{dataset}", exist_ok=True)
-        for question, val in val.items():
+
+        sub_iter = val.items()
+
+        if start is not None:
+            sub_iter = dropwhile(lambda item: item[0] != start[1], sub_iter)
+
+        for question, val in sub_iter:
             print("Start question:", question)
             llm = model(val["options"].keys())
 
@@ -66,3 +79,20 @@ def benchmark(
                         print("Retry")
                         time.sleep(30)
                 json.dump(data, f, indent=4, ensure_ascii=False)
+
+
+def parse_first_argument() -> Optional[Tuple[str, str]]:
+    """
+    Parse the first command-line argument and split by '/'
+    Returns a tuple of two strings if valid, None otherwise
+    """
+    if len(sys.argv) < 2:
+        return None
+
+    first_arg = sys.argv[1]
+    parts = first_arg.split("/")
+
+    if len(parts) == 2:
+        return (parts[0], parts[1])
+
+    return None

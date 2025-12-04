@@ -22,7 +22,6 @@ examples = [
     "tqdm>=4.67.1",
 ]
 benchmark = [
-    "importlib>=1.0.4",
     "argparse>=1.4.0",
     "python-dotenv>=1.2.1",
     "regex>=2025.10.23",
@@ -37,7 +36,6 @@ no-graphygie-neo4j = "examples.no_graphygie_neo4j.main:main"
 no-graphygie-neo4j-embedding = "examples.no_graphygie_neo4j.embedding:main"
 
 benchmark = "benchmark.main:main"
-
 
 [build-system]
 requires = [
