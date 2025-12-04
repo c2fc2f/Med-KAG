@@ -50,6 +50,7 @@ def base_grahygie() -> tuple[GraphExtra, LLM]:
             )
         ],
         cleaner=compose(strip_code_fences, strip_after_double_newline),
+        model_params={"options": {"temperature": 0.0}},
         timeout=None,
     )
 
@@ -59,6 +60,7 @@ def base_grahygie() -> tuple[GraphExtra, LLM]:
         host=OLLAMA_URI,
         model="qwen3:1.7b",
         cleaner=lambda s: s[0],
+        model_params={"options": {"temperature": 0.0}},
     )
 
     return (retrieval, generator_llm)

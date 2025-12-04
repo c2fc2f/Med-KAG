@@ -36,6 +36,7 @@ def native(choices: list[str]) -> LLM:
             )
         ],
         cleaner=lambda s: s[0],
+        model_params={"options": {"temperature": 0.0}},
     )
 
 

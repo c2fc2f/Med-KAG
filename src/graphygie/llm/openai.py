@@ -43,6 +43,8 @@ class OpenAI(LLM):
             defaults are used.
         - cleaner (Optional[Callable[[str], str]]): A function to post-process
             the model's response.
+        - model_params: (Optional[dict[str, Any]]): Extra parameters for the
+            model.
         """
 
         self._client: openai.OpenAI = openai.OpenAI(
