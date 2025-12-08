@@ -18,7 +18,14 @@ class Neo4j(Database):
     returning the results in a human-readable format.
     """
 
-    def __init__(self, uri: str, username: str, password: str, database: str) -> None:
+    def __init__(
+        self,
+        uri: str,
+        username: str,
+        password: str,
+        database: str,
+        excluded_properties: list[str] = list(),
+    ) -> None:
         """
         Initializes the Neo4j driver.
 
@@ -28,35 +35,63 @@ class Neo4j(Database):
         - username (str): Username for authentication.
         - password (str): Password for authentication.
         - database (str): The name of the Neo4j database to connect to.
+        - excluded_properties (list[str]): List of property names to exclude
+            from query results (default: empty list).
         """
 
-        self.driver: Driver = GraphDatabase.driver(uri, auth=(username, password))
-        self.database: str = database
+        self._driver: Driver = GraphDatabase.driver(uri, auth=(username, password))
+        self._database: str = database
+        self._excluded_properties: list[str] = excluded_properties
 
     def query(self, query: str) -> str:
-        self.driver.verify_connectivity()
-        with self.driver.session(database=self.database) as session:
+        def format_properties(props: dict) -> str:
+            """Helper method to format properties as a string."""
+            if not props:
+                return ""
+            prop_str = ", ".join(f"{k}: {v}" for k, v in props.items())
+            return f" {{{prop_str}}}"
+
+        self._driver.verify_connectivity()
+        with self._driver.session(database=self._database) as session:
             result: Result = session.run(cast(Query, query))
 
             graph: Graph = result.graph()
 
             node_labels: dict[int, str] = {}
+            node_properties: dict[int, dict] = {}
             for node in graph.nodes:
                 name = node.get("name") or node.get("title") or f"Node_{node.id}"
                 node_labels[node.id] = name
+                node_properties[node.id] = {
+                    k: v
+                    for k, v in dict(node).items()
+                    if k not in ["name", "title"] + self._excluded_properties
+                }
 
             textual_rels: list[str] = []
             for rel in graph.relationships:
                 if rel.start_node is None:
                     start = "<empty>"
+                    start_props = {}
                 else:
                     start = node_labels[rel.start_node.id]
+                    start_props = node_properties[rel.start_node.id]
+
                 if rel.end_node is None:
                     end = "<empty>"
+                    end_props = {}
                 else:
                     end = node_labels[rel.end_node.id]
+                    end_props = node_properties[rel.end_node.id]
+
                 rel_type = rel.type
-                textual_rels.append(f"{start} -[{rel_type}]-> {end}.")
+                rel_props = dict(rel)
+
+                start_str = f"{start}{format_properties(start_props)}"
+                end_str = f"{end}{format_properties(end_props)}"
+                rel_str = f"[{rel_type}{format_properties(rel_props)}]"
+
+                textual_rels.append(f"{start_str} -{rel_str}-> {end_str}.")
 
             return "\n".join(textual_rels)
 
@@ -64,4 +99,4 @@ class Neo4j(Database):
         """
         Closes the Neo4j driver connection when the object is deleted.
         """
-        self.driver.close()
+        self._driver.close()

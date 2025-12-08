@@ -8,6 +8,7 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "docstring-parser>=0.17.0",
     "neo4j>=5.28.2",
     "ollama>=0.6.0",
     "openai>=2.6.1",
@@ -31,6 +32,7 @@ benchmark = [
 [project.scripts]
 graphygie-ollama = "examples.ollama.main:main"
 graphygie-openrouter = "examples.openrouter.main:main"
+graphygie-agent = "examples.agent.main:main"
 
 no-graphygie-neo4j = "examples.no_graphygie_neo4j.main:main"
 no-graphygie-neo4j-embedding = "examples.no_graphygie_neo4j.embedding:main"

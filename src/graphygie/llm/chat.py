@@ -3,7 +3,7 @@ This module defines the Message class, which represents a single message
 in a chat conversation, as well as the Chat type alias (a list of messages).
 """
 
-from typing import List
+from typing import Any, List
 
 
 class Message:
@@ -14,9 +14,10 @@ class Message:
     - role (str): The role of the message sender (e.g., "user", "assistant",
         "system").
     - content (str): The textual content of the message.
+    - **kwargs: Additional keyword arguments
     """
 
-    def __init__(self, role: str, content: str) -> None:
+    def __init__(self, role: str, content: str, **kwargs) -> None:
         """
         Initializes a Message object.
 
@@ -26,6 +27,7 @@ class Message:
         """
         self._role: str = role
         self._content: str = content
+        self._other: dict[str, Any] = kwargs
 
     @property
     def role(self) -> str:
@@ -54,7 +56,7 @@ class Message:
         Returns:
         - dict: A dictionary with 'role' and 'content' keys.
         """
-        return {"role": self.role, "content": self.content}
+        return {"role": self.role, "content": self.content} | self._other
 
 
 # A chat conversation is simply a list of messages.
