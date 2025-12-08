@@ -63,6 +63,7 @@ def base_grahygie() -> tuple[GraphExtra, LLM]:
         api_key=OPENROUTER_TOKEN,
         model="qwen/qwen3-235b-a22b:free",
         model_params={"temperature": 0},
+        cleaner=lambda s: s[0] if len(s) > 0 else s,
     )
 
     return (retrieval, generator_llm)

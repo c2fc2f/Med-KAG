@@ -38,6 +38,7 @@ def native(choices: list[str]) -> LLM:
                 ),
             )
         ],
+        cleaner=lambda s: s[0] if len(s) > 0 else s,
     )
 
 
