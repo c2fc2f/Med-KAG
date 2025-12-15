@@ -1,6 +1,6 @@
 from typing import Any
 from dotenv import load_dotenv
-from benchmark.util import benchmark, system_prompt, parse_first_argument
+from benchmark.util import benchmark, system_prompt, parse_k_argument
 from graphygie.llm import LLM, OpenAI, Message
 from util import (
     read_to_string,
@@ -55,7 +55,8 @@ def main() -> None:
         bench,
         base,
         native,
-        start=parse_first_argument(),
+        start=parse_k_argument(1),
+        end=parse_k_argument(2),
     )
 
 

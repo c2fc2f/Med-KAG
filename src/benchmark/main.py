@@ -3,6 +3,7 @@ Benchmark Launcher
 Launches different benchmark functions based on command line parameter
 """
 
+import logging
 import os
 import sys
 import argparse
@@ -55,10 +56,21 @@ Available benchmarks:
         "function", choices=BENCHMARK_MODULES.keys(), help="Function to run"
     )
 
+    parser.add_argument(
+        "--logging",
+        action="store_true",
+        help="Enable logging output (disabled by default).",
+    )
+
     args, remaining_args = parser.parse_known_args()
 
     module_path = BENCHMARK_MODULES[args.function]
     benchmark_func = load_benchmark_function(module_path)
+
+    if args.logging:
+        logging.basicConfig(
+            level=logging.INFO, format="{levelname}:{name}:\n{message}", style="{"
+        )
 
     print(f"Launching benchmark: {args.function}")
     print("-" * 50)
