@@ -89,6 +89,8 @@ def benchmark(
                         print(str(e))
                         print("Retry")
                         time.sleep(30)
+
+                logger.info(data)
                 json.dump(data, f, indent=4, ensure_ascii=False)
 
             if end is not None and dataset == end[0] and question == end[1]:
