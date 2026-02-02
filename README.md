@@ -1,18 +1,29 @@
-# Med-KAG
+# Med-KAG: Knowledge Augmented Generation for Medical Decision Support
 
-This project aims to create **Graphygie**, a Python library designed to simplify the creation of **GraphRAG** pipelines.  
-It was developed as part of the [KGConversationalAI project](https://github.com/Gabriel382/KGConversationalAI), which focuses on assisting doctors by creating a **3D assistant** capable of answering their medical questions.
+Med-KAG is an AI assistant architecture designed to enhance the reliability of clinical decision support. By extending the Retrieval-Augmented Generation (RAG) paradigm through the integration of a structured Knowledge Graph (KG), Med-KAG aims to reduce factual hallucinations and provide traceable reasoning for medical diagnosis.
 
-The graph used here is extracted from the dataset published in the following paper:
-📎 [BioPropaPhen and BioPropaPhenKG - Zenodo](https://zenodo.org/records/10911980)
+## Overview
 
----
+Unlike traditional RAG systems that rely on unstructured text, Med-KAG anchors the generation process in the **UMLS Metathesaurus**. This ensures that the model's responses are constrained by verified medical relationships between diseases, symptoms, and treatments.
 
-## 📦 Project Overview
+### Key Features
 
-Graph-RAG is a method of retrieving information from a **knowledge graph** to augment the context of a language model, rather than retrieving text passages. This repository uses a Neo4j database containing the UMLS knowledge graph, which includes medical concepts and their relationships.
+* **Knowledge-Anchored Generation:** Replaces standard vector-based text retrieval with a structured Knowledge Graph (KG) derived from UMLS.
+* **Traceable Reasoning:** Provides transparency by identifying and extracting relevant sub-graphs (concepts and relations) used to formulate a response.
+* **LLM-Powered Retrieval:** Uses advanced models (such as Qwen3-235B-A22B) to generate Cypher queries for precise data extraction from Neo4j.
+* **Modular Design:** Built to evolve from a linear pipeline into a Modular RAG framework, supporting future iterations like auto-correction and hybrid search.
 
-> ⚠️ The database includes **location-related data**, but these are **not used** in this project.
+## Preliminary Results
+
+In evaluations using the **MedQA-US** dataset, the Med-KAG architecture demonstrated:
+
+* **High Diagnostic Accuracy:** Achieved a precision of **91.28%**, comparable to the native Qwen3-235B-A22B baseline (91.67%).
+* **Transparency:** Successfully identifies key entities (e.g., "flexor tendon") and their semantic neighborhoods to provide clinical context.
+* **Identified Bottlenecks:** Analysis pinpointed LLM-based Cypher generation as a primary area for improvement, with a 22% syntax error rate in this preliminary iteration.
+
+## Future Roadmap
+
+Immediate development focuses on a **hybrid retriever** that combines semantic embedding-based search with graph traversal to improve the robustness of entity linking and overall clinical assistance.
 
 ---
 
@@ -26,57 +37,13 @@ Graph-RAG is a method of retrieving information from a **knowledge graph** to au
 
 ---
 
-## 📁 Repository Structure
-
-```
-.
-├── docker-compose.yml                      # Docker service configuration for Neo4j
-├── flake.nix / flake.lock                  # Nix environment definitions
-├── pyproject.toml                          # Python project configuration and dependencies
-├── setup.sh                                # Script to download, load and migrate Neo4j dump
-├── uv.lock                                 # UV package manager lock file
-├── src/
-│   ├── examples/                           # Example implementations
-│   │   └── basic/                          # Basic GraphRAG example
-│   │       ├── main.py                     # Example entry point
-│   │       ├── resources/
-│   │       │   └── prompt/                 # Prompt templates
-│   │       │       ├── generator_system.md
-│   │       │       ├── retrieval_system.md
-│   │       │       └── user.md
-│   │       └── util/                       # Example utility functions
-│   │           ├── cleaner.py
-│   │           ├── compose.py
-│   │           ├── generator_system_prompt.py
-│   │           ├── read_to_string.py
-│   │           ├── unwrap.py
-│   │           └── user_prompt.py
-│   └── graphygie/                          # Core Graphygie library
-│       ├── generation/                     # Response generation
-│       │   └── basic_generator.py          # Generator using retriever + LLM
-│       ├── llm/                            # LLM integrations
-│       │   ├── chat.py                     # Chat interface
-│       │   ├── llm.py                      # Base LLM class
-│       │   ├── ollama.py                   # Ollama integration
-│       │   └── openai.py                   # OpenAI integration
-│       └── retrieval/                      # Graph and database retrieval logic
-│           ├── database/
-│           │   ├── database.py             # Database interface
-│           │   └── neo4j.py                # Neo4j implementation
-│           └── graph.py                    # Graph retrieval logic
-├── LICENSE
-└── README.md                               # You're here!
-```
-
----
-
 ## 🚀 Getting Started
 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/culxttes/UMLS-GraphRAG.git
-cd UMLS-GraphRAG
+git clone https://github.com/c2fc2f/Med-KAG.git
+cd Med-KAG
 ```
 
 ### 2. Prepare the Neo4j Graph Database
@@ -115,17 +82,8 @@ uv sync --extra examples
 ### 5. Run the Application
 
 ```bash
-uv run graphygie-basic
+uv run graphygie-openrouter
 ```
-
----
-
-## ❗ Important Notes
-
-* **No tests** are currently included.
-* Graphygie is intended to be extended for projects like **KGConversationalAI**.
-* This project does **not** currently use vector stores — all context is retrieved from the graph.
-* Make sure the Neo4j container is running before executing Python code.
 
 ---
 
