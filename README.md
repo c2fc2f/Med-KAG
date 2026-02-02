@@ -55,7 +55,7 @@ uv sync --extra examples
 ### 3. Run the Application
 
 ```bash
-uv run graphygie-openrouter
+uv run graphygie-openai
 ```
 
 ---
