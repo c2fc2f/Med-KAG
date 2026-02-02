@@ -7,7 +7,7 @@ pipeline.
 import logging
 from graphygie.llm import LLM
 from graphygie.llm.chat import Chat
-from typing import Callable
+from typing import Any, Callable, Optional
 
 
 class BasicGenerator(LLM):
@@ -39,11 +39,16 @@ class BasicGenerator(LLM):
         self._generator = generator
         self._chat = chat
         self._maker = maker
+        self._info = None
+
+    def info(self) -> Optional[dict[str, Any]]:
+        return self._info
 
     def chat(self, chat: Chat = list()) -> str:
         logger: logging.Logger = logging.getLogger(__name__)
 
         result: str = self._retriever.chat(chat)
+        self._info = self._retriever.info()
         chat = self._maker(self._chat, result) + chat
 
         logger.info(result)

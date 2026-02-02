@@ -1,11 +1,11 @@
 from typing import Any
 from dotenv import load_dotenv
-from benchmark.generation.basic_generator import BasicGeneratorExtra
 from benchmark.util import benchmark, system_prompt, parse_k_argument
-from benchmark.retrieval import GraphExtra
-from benchmark.retrieval.database import Neo4jExtra
+from graphygie.generation.basic_generator import BasicGenerator
 from graphygie.llm import LLM, Ollama, Message
+from graphygie.retrieval import Graph
 from graphygie.retrieval.database import Database
+from graphygie.retrieval.database.neo4j import Neo4j
 from util import (
     read_to_string,
     unwrap,
@@ -30,12 +30,13 @@ OLLAMA_URI = unwrap(os.getenv("OLLAMA_URI"))
 CURRENT_DIR: str = os.path.dirname(os.path.abspath(__file__))
 
 
-def base_grahygie() -> tuple[GraphExtra, LLM]:
-    database: Database = Neo4jExtra(
+def base_grahygie() -> tuple[Graph, LLM]:
+    database: Database = Neo4j(
         uri=NEO4J_URI,
         username=NEO4J_USERNAME,
         password=NEO4J_PASSWORD,
         database=NEO4J_DATABASE,
+        excluded_properties=["embedding"],
     )
 
     retrieval_llm: LLM = Ollama(
@@ -54,7 +55,7 @@ def base_grahygie() -> tuple[GraphExtra, LLM]:
         timeout=None,
     )
 
-    retrieval: GraphExtra = GraphExtra(llm=retrieval_llm, database=database)
+    retrieval: Graph = Graph(llm=retrieval_llm, database=database)
 
     generator_llm: LLM = Ollama(
         host=OLLAMA_URI,
@@ -67,9 +68,9 @@ def base_grahygie() -> tuple[GraphExtra, LLM]:
 
 
 def graphygie(
-    retrieval: GraphExtra, generator_llm: LLM, choices: list[str]
-) -> BasicGeneratorExtra:
-    return BasicGeneratorExtra(
+    retrieval: Graph, generator_llm: LLM, choices: list[str]
+) -> BasicGenerator:
+    return BasicGenerator(
         retriever=retrieval,
         generator=generator_llm,
         chat=[

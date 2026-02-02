@@ -4,6 +4,7 @@ that can generate responses or queries based on a chat history.
 """
 
 from abc import ABC, abstractmethod
+from typing import Any, Optional
 from .chat import Chat
 
 
@@ -25,4 +26,9 @@ class LLM(ABC):
         Returns:
         - str: The result of the query executed on the database.
         """
+        ...
+
+    @abstractmethod
+    def info(self) -> Optional[dict[str, Any]]:
+        """Returns statistics from the last chat"""
         ...

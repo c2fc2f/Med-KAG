@@ -7,7 +7,7 @@ readable text.
 from .database import Database
 from neo4j import Driver, GraphDatabase, Query, Result
 from neo4j.graph import Graph
-from typing import cast
+from typing import Any, Optional, cast
 
 
 class Neo4j(Database):
@@ -42,6 +42,10 @@ class Neo4j(Database):
         self._driver: Driver = GraphDatabase.driver(uri, auth=(username, password))
         self._database: str = database
         self._excluded_properties: list[str] = excluded_properties
+        self._info = None
+
+    def info(self) -> Optional[dict[str, Any]]:
+        return self._info
 
     def query(self, query: str) -> str:
         def format_properties(props: dict) -> str:
@@ -53,9 +57,23 @@ class Neo4j(Database):
 
         self._driver.verify_connectivity()
         with self._driver.session(database=self._database) as session:
-            result: Result = session.run(cast(Query, query))
+            try:
+                result: Result = session.run(cast(Query, query))
+            except:
+                self._info = {
+                    "error": 1,
+                    "nodes": 0,
+                    "edges": 0,
+                }
+                return ""
 
             graph: Graph = result.graph()
+
+            self._info = {
+                "error": 0,
+                "nodes": len(graph.nodes),
+                "edges": len(graph.relationships),
+            }
 
             node_labels: dict[int, str] = {}
             node_properties: dict[int, dict] = {}
@@ -87,9 +105,9 @@ class Neo4j(Database):
                 rel_type = rel.type
                 rel_props = dict(rel)
 
-                start_str = f"{start}{format_properties(start_props)}"
-                end_str = f"{end}{format_properties(end_props)}"
-                rel_str = f"[{rel_type}{format_properties(rel_props)}]"
+                start_str = f"{start}:{format_properties(start_props)}"
+                end_str = f"{end}:{format_properties(end_props)}"
+                rel_str = f"[{rel_type}:{format_properties(rel_props)}]"
 
                 textual_rels.append(f"{start_str} -{rel_str}-> {end_str}.")
 

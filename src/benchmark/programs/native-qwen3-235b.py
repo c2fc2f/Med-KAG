@@ -12,16 +12,16 @@ import os
 
 load_dotenv()
 
-OPENROUTER_URI = unwrap(os.getenv("OPENROUTER_URI"))
-OPENROUTER_TOKEN = unwrap(os.getenv("OPENROUTER_TOKEN"))
+OPENAI_URI = unwrap(os.getenv("OPENAI_URI"))
+OPENAI_TOKEN = unwrap(os.getenv("OPENAI_TOKEN"))
 
 CURRENT_DIR: str = os.path.dirname(os.path.abspath(__file__))
 
 
 def native(choices: list[str]) -> LLM:
     return OpenAI(
-        host=OPENROUTER_URI,
-        api_key=OPENROUTER_TOKEN,
+        host=OPENAI_URI,
+        api_key=OPENAI_TOKEN,
         model="qwen/qwen3-235b-a22b:free",
         model_params={"temperature": 0},
         chat=[

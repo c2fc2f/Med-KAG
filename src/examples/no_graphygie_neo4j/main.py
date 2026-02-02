@@ -21,8 +21,8 @@ NEO4J_EMBED_INDEX = unwrap(os.getenv("NEO4J_EMBED_INDEX"))
 OLLAMA_URI = unwrap(os.getenv("OLLAMA_URI"))
 EMBEDDING_MODEL = unwrap(os.getenv("EMBEDDING_MODEL"))
 
-OPENROUTER_URI = unwrap(os.getenv("OPENROUTER_URI"))
-OPENROUTER_TOKEN = unwrap(os.getenv("OPENROUTER_TOKEN"))
+OPENAI_URI = unwrap(os.getenv("OPENAI_URI"))
+OPENAI_TOKEN = unwrap(os.getenv("OPENAI_TOKEN"))
 
 
 def main() -> None:
@@ -51,8 +51,8 @@ def main() -> None:
 
     # 3. LLM
     llm = OpenAILLM(
-        base_url=OPENROUTER_URI,
-        api_key=OPENROUTER_TOKEN,
+        base_url=OPENAI_URI,
+        api_key=OPENAI_TOKEN,
         model_name="qwen/qwen3-235b-a22b:free",
         model_params={"temperature": 0},
     )

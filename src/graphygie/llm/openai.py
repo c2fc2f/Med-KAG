@@ -69,6 +69,9 @@ class OpenAI(LLM):
         self._cleaner: Optional[Callable[[str], str]] = cleaner
         self._model_params: Optional[dict[str, Any]] = model_params
 
+    def info(self) -> Optional[dict[str, Any]]:
+        return None
+
     def chat(self, chat: Chat = list()) -> str:
         chat = self._chat + chat
         response: ChatCompletion = self._client.chat.completions.create(

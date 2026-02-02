@@ -21,8 +21,9 @@ Your task is to generate a **syntactically and semantically correct Cypher query
 ### Output format:
 
 ```
-MATCH (c1:CUI {name: "Halobellus clavatus"})<-[r1:PAR|CHD]-(c2:CUI)
+MATCH (c1:CUI)<-[r1:PAR|CHD]-(c2:CUI)
 MATCH (c2)-[r2:PAR|CHD]->(c3:CUI)-[r3:PAR|CHD]->(c4:CUI)
+WHERE c1.name CONTAINS ""Halobellus clavatus"
 RETURN c1, c2, c3, c4, r1, r2, r3
 ```
 

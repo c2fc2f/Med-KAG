@@ -31,7 +31,7 @@ benchmark = [
 
 [project.scripts]
 graphygie-ollama = "examples.ollama.main:main"
-graphygie-openrouter = "examples.openrouter.main:main"
+graphygie-openai = "examples.openai.main:main"
 graphygie-agent = "examples.agent.main:main"
 
 no-graphygie-neo4j = "examples.no_graphygie_neo4j.main:main"

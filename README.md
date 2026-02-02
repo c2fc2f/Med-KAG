@@ -30,8 +30,6 @@ Immediate development focuses on a **hybrid retriever** that combines semantic e
 ## 🧰 Features
 
 * Uses the UMLS Neo4j graph dump provided by the original GraphRAG publication.
-* Provides a `setup.sh` script to download, import, and migrate the Neo4j database.
-* Launches a local Neo4j instance using Docker Compose.
 * Modular and type-annotated Python codebase.
 * Interface-based architecture for flexibility and clarity.
 
@@ -46,32 +44,7 @@ git clone https://github.com/c2fc2f/Med-KAG.git
 cd Med-KAG
 ```
 
-### 2. Prepare the Neo4j Graph Database
-
-Run the setup script (only once):
-
-```bash
-chmod +x setup.sh
-./setup.sh
-```
-
-This will:
-
-* Download the Neo4j dump file from [Zenodo](https://zenodo.org/records/10911980)
-* Load it into the proper `data/` directory
-* Run necessary migrations
-
-> 🔧 The database is not turn-key out of the box — it must be set up manually using this script.
-
-### 3. Launch the Neo4j Server
-
-```bash
-docker compose up -d neo4j
-```
-
-This will start a local Neo4j server accessible at `bolt://localhost:7687` with default credentials (`neo4j/<empty password>`).
-
-### 4. Install Python Dependencies
+### 2. Install Python Dependencies
 
 ```bash
 uv sync --extra examples
@@ -79,7 +52,7 @@ uv sync --extra examples
 
 > This will create a virtual environment and install all dependencies from `pyproject.toml`
 
-### 5. Run the Application
+### 3. Run the Application
 
 ```bash
 uv run graphygie-openrouter

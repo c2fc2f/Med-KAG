@@ -3,6 +3,7 @@ This module defines the abstract interface for a Database.
 """
 
 from abc import ABC, abstractmethod
+from typing import Any, Optional
 
 
 class Database(ABC):
@@ -21,4 +22,9 @@ class Database(ABC):
         Returns:
         - str: The result of the query.
         """
+        ...
+
+    @abstractmethod
+    def info(self) -> Optional[dict[str, Any]]:
+        """Returns statistics from the last query"""
         ...

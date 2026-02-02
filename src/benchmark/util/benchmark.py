@@ -1,12 +1,11 @@
 import logging
 import time
-from typing import Any, Callable, Optional, Tuple, cast
+from typing import Any, Callable, Optional, Tuple
 from itertools import dropwhile
 from benchmark.util import user_prompt
-from benchmark.llm import LLMExtra
 from graphygie.llm import LLM, Message
 from util import (
-    unwrap,
+    unwrap_or,
 )
 
 import json
@@ -16,8 +15,10 @@ import sys
 
 def run(
     base: str, generator: LLM, question: str, choices: dict[str, str]
-) -> str | Tuple[str, dict[str, int]]:
-    result: str = generator.chat(
+) -> dict[str, Any]:
+    data: dict[str, Any] = unwrap_or(generator.info(), dict())
+
+    data["response"] = generator.chat(
         chat=[
             Message(
                 role="user",
@@ -31,9 +32,7 @@ def run(
         ]
     )
 
-    if isinstance(generator, LLMExtra):
-        return (result, unwrap(generator.info()))
-    return result
+    return data
 
 
 def benchmark(
@@ -72,18 +71,7 @@ def benchmark(
             ) as f:
                 while True:
                     try:
-                        if isinstance(llm, LLMExtra):
-                            (response, data) = cast(
-                                Tuple[str, dict[str, int | str]],
-                                run(base, llm, val["question"], val["options"]),
-                            )
-                            data["response"] = response
-                        else:
-                            data = {
-                                "response": cast(
-                                    str, run(base, llm, val["question"], val["options"])
-                                )
-                            }
+                        data = run(base, llm, val["question"], val["options"])
                         break
                     except Exception as e:
                         print(str(e))

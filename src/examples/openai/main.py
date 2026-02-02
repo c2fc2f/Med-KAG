@@ -2,21 +2,23 @@
 Main entry point for the Graphygie pipeline.
 
 This script initializes the retrieval and generation components of the system,
-connecting a Neo4j database with language models (Ollama) to handle user
-queries. The process follows these steps:
+connecting a Neo4j database with language models to handle user queries. The
+process follows these steps:
 
 1. Load environment variables for database and LLM configuration.
 2. Initialize the Neo4j database connection.
-3. Initialize an Ollama-based LLM to act as a retriever (query generation).
+3. Initialize an OpenRouter-based LLM to act as a retriever (query
+    generation).
 4. Wrap the retriever in a Graph-based retriever that queries Neo4j.
 5. Initialize another Ollama-based LLM to act as a generator (final response).
 6. Combine the retriever and generator in a BasicGenerator pipeline.
 7. Format the user prompt and generate the final response.
 """
 
+from examples.no_graphygie_neo4j.main import OPENAI_TOKEN
 from graphygie.retrieval import Graph
 from graphygie.retrieval.database import Neo4j, Database
-from graphygie.llm import LLM, Ollama, Message
+from graphygie.llm import LLM, Ollama, OpenAI, Message
 from graphygie.generation import BasicGenerator
 import logging
 from util import (
@@ -41,6 +43,9 @@ NEO4J_DATABASE = unwrap(os.getenv("NEO4J_DATABASE"))
 
 OLLAMA_URI = unwrap(os.getenv("OLLAMA_URI"))
 
+OPENAI_URI = unwrap(os.getenv("OPENAI_URI"))
+OPENAI_TOKEN = unwrap(os.getenv("OPENAI_TOKEN"))
+
 
 def main() -> None:
     logging.basicConfig(
@@ -58,14 +63,15 @@ def main() -> None:
         database=NEO4J_DATABASE,
     )
 
-    # Initialize the Ollama language model
-    # - Connects to Ollama API using the host from environment variables
-    # - Uses the "mistral:7b" model
+    # Initialize the OpenRouter language model
+    # - Connects to OpenRouter API using the host from environment variables
+    # - Uses the "qwen/qwen3-235b-a22b:free" model
     # - Starts with a system prompt loaded from a file
     # - Applies a custom cleaner function to trim the model's response
-    retrieval_llm: LLM = Ollama(
-        host=OLLAMA_URI,
-        model="mistral:7b",
+    retrieval_llm: LLM = OpenAI(
+        host=OPENAI_URI,
+        api_key=OPENAI_TOKEN,
+        model="qwen/qwen3-235b-a22b:free",
         chat=[
             Message(
                 role="system",
@@ -75,6 +81,7 @@ def main() -> None:
             )
         ],
         cleaner=compose(strip_code_fences, strip_after_double_newline),
+        timeout=None,
     )
 
     # Create a graph-based retriever using the LLM and database

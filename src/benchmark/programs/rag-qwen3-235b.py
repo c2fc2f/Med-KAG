@@ -1,11 +1,11 @@
 from typing import Any
 from dotenv import load_dotenv
-from benchmark.generation.basic_generator import BasicGeneratorExtra
 from benchmark.util import benchmark, system_prompt, parse_k_argument
-from benchmark.retrieval import GraphExtra
-from benchmark.retrieval.database import Neo4jExtra
+from graphygie.generation.basic_generator import BasicGenerator
 from graphygie.llm import LLM, OpenAI, Message
+from graphygie.retrieval import Graph
 from graphygie.retrieval.database import Database
+from graphygie.retrieval.database.neo4j import Neo4j
 from util import (
     read_to_string,
     unwrap,
@@ -25,23 +25,24 @@ NEO4J_USERNAME = unwrap(os.getenv("NEO4J_USERNAME"))
 NEO4J_PASSWORD = unwrap(os.getenv("NEO4J_PASSWORD"))
 NEO4J_DATABASE = unwrap(os.getenv("NEO4J_DATABASE"))
 
-OPENROUTER_URI = unwrap(os.getenv("OPENROUTER_URI"))
-OPENROUTER_TOKEN = unwrap(os.getenv("OPENROUTER_TOKEN"))
+OPENAI_URI = unwrap(os.getenv("OPENAI_URI"))
+OPENAI_TOKEN = unwrap(os.getenv("OPENAI_TOKEN"))
 
 CURRENT_DIR: str = os.path.dirname(os.path.abspath(__file__))
 
 
-def base_grahygie() -> tuple[GraphExtra, LLM]:
-    database: Database = Neo4jExtra(
+def base_grahygie() -> tuple[Graph, LLM]:
+    database: Database = Neo4j(
         uri=NEO4J_URI,
         username=NEO4J_USERNAME,
         password=NEO4J_PASSWORD,
         database=NEO4J_DATABASE,
+        excluded_properties=["embedding"],
     )
 
     retrieval_llm: LLM = OpenAI(
-        host=OPENROUTER_URI,
-        api_key=OPENROUTER_TOKEN,
+        host=OPENAI_URI,
+        api_key=OPENAI_TOKEN,
         model="qwen/qwen3-235b-a22b:free",
         model_params={"temperature": 0},
         chat=[
@@ -56,11 +57,11 @@ def base_grahygie() -> tuple[GraphExtra, LLM]:
         timeout=None,
     )
 
-    retrieval: GraphExtra = GraphExtra(llm=retrieval_llm, database=database)
+    retrieval: Graph = Graph(llm=retrieval_llm, database=database)
 
     generator_llm: LLM = OpenAI(
-        host=OPENROUTER_URI,
-        api_key=OPENROUTER_TOKEN,
+        host=OPENAI_URI,
+        api_key=OPENAI_TOKEN,
         model="qwen/qwen3-235b-a22b:free",
         model_params={"temperature": 0},
         cleaner=lambda s: s[0] if len(s) > 0 else s,
@@ -70,9 +71,9 @@ def base_grahygie() -> tuple[GraphExtra, LLM]:
 
 
 def graphygie(
-    retrieval: GraphExtra, generator_llm: LLM, choices: list[str]
-) -> BasicGeneratorExtra:
-    return BasicGeneratorExtra(
+    retrieval: Graph, generator_llm: LLM, choices: list[str]
+) -> BasicGenerator:
+    return BasicGenerator(
         retriever=retrieval,
         generator=generator_llm,
         chat=[

@@ -6,6 +6,7 @@ The LLM generates a query from the chat history, which is then executed on the
 database.
 """
 
+from typing import Any, Optional
 from graphygie.llm import LLM
 from graphygie.llm.chat import Chat
 from .database import Database
@@ -32,6 +33,10 @@ class Graph(LLM):
         """
         self._llm: LLM = llm
         self._database: Database = database
+        self._info = None
+
+    def info(self) -> Optional[dict[str, Any]]:
+        return self._info
 
     def chat(self, chat: Chat = list()) -> str:
         logger: logging.Logger = logging.getLogger(__name__)
@@ -41,5 +46,6 @@ class Graph(LLM):
         logger.info(query)
 
         result: str = self._database.query(query)
+        self._info = self._database.info()
 
         return result
