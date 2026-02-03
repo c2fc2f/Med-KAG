@@ -3,7 +3,7 @@ import os
 import re
 from pathlib import Path
 from statistics import mean, median
-from typing import Any, Dict, List, Mapping, Union, cast
+from typing import Any, List, Mapping, Union
 from dataclasses import dataclass
 
 from util.serializable import Atome, Serializable
@@ -151,10 +151,9 @@ def display_stats(
         print()
 
         for method, info in sorted(infos.items(), key=lambda e: e[0]):
-            if method in stats_methods.keys():
-                stats_methods[method].append(info)
-            else:
-                stats_methods[method] = [info]
+            if method not in stats_methods.keys():
+                stats_methods[method] = []
+            stats_methods[method].append(info)
 
             display_one_stats(info, methods_ind[method])
 

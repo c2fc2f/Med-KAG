@@ -36,11 +36,11 @@ class BasicGenerator(LLM):
             existing chat
           with the retrieved result to build the input for the generator.
         """
-        self._retriever = retriever
-        self._generator = generator
-        self._chat = chat
-        self._maker = maker
-        self._info = None
+        self._retriever: LLM = retriever
+        self._generator: LLM = generator
+        self._chat: Chat = chat
+        self._maker: Callable[[Chat, str], Chat] = maker
+        self._info: Optional[dict[str, Any]] = None
 
     def info(self) -> Optional[dict[str, Any]]:
         return self._info
@@ -49,7 +49,7 @@ class BasicGenerator(LLM):
         logger: logging.Logger = logging.getLogger(__name__)
         self._info = dict()
 
-        start = time.perf_counter()
+        start: float = time.perf_counter()
 
         info: str = self._retriever.chat(chat)
         self._info["retriever"] = self._retriever.info()
@@ -61,7 +61,7 @@ class BasicGenerator(LLM):
         result: str = self._generator.chat(chat)
         self._info["generator"] = self._generator.info()
 
-        end = time.perf_counter()
+        end: float = time.perf_counter()
         self._info["time"] = (end - start) * 1000
 
         return result

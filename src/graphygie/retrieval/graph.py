@@ -35,7 +35,7 @@ class GraphLLM(LLM):
         """
         self._llm: LLM = llm
         self._database: Database = database
-        self._info = None
+        self._info: Optional[dict[str, Any]] = None
 
     def info(self) -> Optional[dict[str, Any]]:
         return self._info
@@ -44,7 +44,7 @@ class GraphLLM(LLM):
         logger: logging.Logger = logging.getLogger(__name__)
         self._info = dict()
 
-        start = time.perf_counter()
+        start: float = time.perf_counter()
 
         query: str = self._llm.chat(chat)
         self._info["model"] = unwrap_or(self._llm.info(), dict())
@@ -55,7 +55,7 @@ class GraphLLM(LLM):
         result: str = self._database.query(query)
         self._info["database"] = unwrap_or(self._database.info(), dict())
 
-        end = time.perf_counter()
+        end: float = time.perf_counter()
 
         self._info["time"] = (end - start) * 1000
 

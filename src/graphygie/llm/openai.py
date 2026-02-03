@@ -69,7 +69,7 @@ class OpenAI(LLM):
         self._tools: list[Tool] = tools
         self._cleaner: Optional[Callable[[str], str]] = cleaner
         self._model_params: Optional[dict[str, Any]] = model_params
-        self._info = None
+        self._info: Optional[dict[str, Any]] = None
 
     def info(self) -> Optional[dict[str, Any]]:
         return self._info
@@ -77,7 +77,7 @@ class OpenAI(LLM):
     def chat(self, chat: Chat = list()) -> str:
         chat = self._chat + chat
 
-        start = time.perf_counter()
+        start: float = time.perf_counter()
 
         response: ChatCompletion = self._client.chat.completions.create(
             model=self._model,
@@ -98,7 +98,7 @@ class OpenAI(LLM):
             ],
             **(self._model_params or {}),
         )
-        res = response.choices[0].message.content or ""
+        res: str = response.choices[0].message.content or ""
         while response.choices[0].message.tool_calls is not None:
             chat.append(Message(response.choices[0].message.role, res))
             for call in response.choices[0].message.tool_calls:
@@ -114,7 +114,7 @@ class OpenAI(LLM):
                     else ""
                 )
                 chat.append(Message("tool", str(result), tool_name=call.function.name))
-            response: ChatCompletion = self._client.chat.completions.create(
+            response = self._client.chat.completions.create(
                 model=self._model,
                 messages=[
                     cast(ChatCompletionMessageParam, message.to_dict())
@@ -136,7 +136,7 @@ class OpenAI(LLM):
             )
             res = response.choices[0].message.content or ""
 
-        end = time.perf_counter()
+        end: float = time.perf_counter()
         self._info = {"time": (end - start) * 1000}
         if self._cleaner is not None:
             return self._cleaner(res)

@@ -21,12 +21,15 @@ examples = [
     "langchain-ollama>=1.0.0",
     "neo4j-graphrag>=1.10.1",
     "tqdm>=4.67.1",
+    "types-tqdm>=4.67.2",
+
 ]
 benchmark = [
     "argparse>=1.4.0",
     "python-dotenv>=1.2.1",
     "regex>=2025.10.23",
     "tqdm>=4.67.1",
+    "types-tqdm>=4.67.2",
 ]
 
 [project.scripts]

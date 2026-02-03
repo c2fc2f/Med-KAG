@@ -43,7 +43,7 @@ class Neo4j(Database):
         self._driver: Driver = GraphDatabase.driver(uri, auth=(username, password))
         self._database: str = database
         self._excluded_properties: list[str] = excluded_properties
-        self._info = None
+        self._info: Optional[dict[str, Any]] = None
 
     def info(self) -> Optional[dict[str, Any]]:
         return self._info
@@ -56,30 +56,30 @@ class Neo4j(Database):
             prop_str = ", ".join(f"{k}: {v}" for k, v in props.items())
             return f" {{{prop_str}}}"
 
-        start = time.perf_counter()
+        startt: float = time.perf_counter()
 
         self._driver.verify_connectivity()
         with self._driver.session(database=self._database) as session:
             try:
                 result: Result = session.run(cast(Query, query))
             except:
-                end = time.perf_counter()
+                endt: float = time.perf_counter()
                 self._info = {
                     "errors": 1,
                     "nodes": 0,
                     "edges": 0,
-                    "time": (end - start) * 1000,
+                    "time": (endt - startt) * 1000,
                 }
                 return ""
 
             graph: Graph = result.graph()
 
-            end = time.perf_counter()
+            endt = time.perf_counter()
             self._info = {
                 "errors": 0,
                 "nodes": len(graph.nodes),
                 "edges": len(graph.relationships),
-                "time": (end - start) * 1000,
+                "time": (endt - startt) * 1000,
             }
 
             node_labels: dict[int, str] = {}
@@ -96,21 +96,21 @@ class Neo4j(Database):
             textual_rels: list[str] = []
             for rel in graph.relationships:
                 if rel.start_node is None:
-                    start = "<empty>"
-                    start_props = {}
+                    start: str = "<empty>"
+                    start_props: dict = {}
                 else:
                     start = node_labels[rel.start_node.id]
                     start_props = node_properties[rel.start_node.id]
 
                 if rel.end_node is None:
-                    end = "<empty>"
-                    end_props = {}
+                    end: str = "<empty>"
+                    end_props: dict = {}
                 else:
                     end = node_labels[rel.end_node.id]
                     end_props = node_properties[rel.end_node.id]
 
-                rel_type = rel.type
-                rel_props = dict(rel)
+                rel_type: str = rel.type
+                rel_props: dict = dict(rel)
 
                 start_str = f"{start}:{format_properties(start_props)}"
                 end_str = f"{end}:{format_properties(end_props)}"

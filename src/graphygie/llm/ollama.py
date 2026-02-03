@@ -57,7 +57,7 @@ class Ollama(LLM):
         self._tools: list[Tool] = tools
         self._cleaner: Optional[Callable[[str], str]] = cleaner
         self._model_params: Optional[dict[str, Any]] = model_params
-        self._info = None
+        self._info: Optional[dict[str, Any]] = None
 
     def info(self) -> Optional[dict[str, Any]]:
         return self._info
@@ -65,7 +65,7 @@ class Ollama(LLM):
     def chat(self, chat: Chat = list()) -> str:
         chat = self._chat + chat
 
-        start = time.perf_counter()
+        start: float = time.perf_counter()
 
         response: ChatResponse = self._client.chat(
             model=self._model,
@@ -83,7 +83,7 @@ class Ollama(LLM):
             ],
             **(self._model_params or {}),
         )
-        res = response.message.content or ""
+        res: str = response.message.content or ""
         while response.message.tool_calls is not None:
             chat.append(Message(response.message.role, res))
             for call in response.message.tool_calls:
@@ -93,7 +93,7 @@ class Ollama(LLM):
                 )
                 result = func(**call.function.arguments) if func is not None else ""
                 chat.append(Message("tool", str(result), tool_name=call.function.name))
-            response: ChatResponse = self._client.chat(
+            response = self._client.chat(
                 model=self._model,
                 messages=[message.to_dict() for message in chat],
                 tools=[tool._func for tool in self._tools],
@@ -101,7 +101,7 @@ class Ollama(LLM):
             )
             res = response.message.content or ""
 
-        end = time.perf_counter()
+        end: float = time.perf_counter()
         self._info = {"time": (end - start) * 1000}
         if self._cleaner is not None:
             return self._cleaner(res)
