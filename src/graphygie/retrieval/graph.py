@@ -6,14 +6,16 @@ The LLM generates a query from the chat history, which is then executed on the
 database.
 """
 
+import time
 from typing import Any, Optional
 from graphygie.llm import LLM
 from graphygie.llm.chat import Chat
+from util.unwrap import unwrap_or
 from .database import Database
 import logging
 
 
-class Graph(LLM):
+class GraphLLM(LLM):
     """
     A graph-based retriever that uses an LLM to generate a query from a chat
     history, then executes that query against a graph database.
@@ -40,12 +42,21 @@ class Graph(LLM):
 
     def chat(self, chat: Chat = list()) -> str:
         logger: logging.Logger = logging.getLogger(__name__)
+        self._info = dict()
+
+        start = time.perf_counter()
 
         query: str = self._llm.chat(chat)
+        self._info["model"] = unwrap_or(self._llm.info(), dict())
+        self._info["query"] = query
 
         logger.info(query)
 
         result: str = self._database.query(query)
-        self._info = self._database.info()
+        self._info["database"] = unwrap_or(self._database.info(), dict())
+
+        end = time.perf_counter()
+
+        self._info["time"] = (end - start) * 1000
 
         return result

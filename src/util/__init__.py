@@ -9,7 +9,7 @@ from .cleaner import strip_code_fences, strip_after_double_newline
 from .compose import compose
 from .user_prompt import user_prompt
 from .generator_system_prompt import generator_system_prompt
-
+from .serializable import Serializable
 
 __all__: list[str] = [
     "read_to_string",
@@ -20,4 +20,5 @@ __all__: list[str] = [
     "strip_code_fences",
     "strip_after_double_newline",
     "compose",
+    "Serializable",
 ]

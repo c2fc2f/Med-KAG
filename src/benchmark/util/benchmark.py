@@ -1,12 +1,11 @@
 import logging
 import time
-from typing import Any, Callable, Optional, Tuple
+from typing import Any, Callable, Dict, Optional, Tuple
 from itertools import dropwhile
 from benchmark.util import user_prompt
 from graphygie.llm import LLM, Message
-from util import (
-    unwrap_or,
-)
+from datetime import datetime
+from util import unwrap_or, Serializable
 
 import json
 import os
@@ -15,8 +14,8 @@ import sys
 
 def run(
     base: str, generator: LLM, question: str, choices: dict[str, str]
-) -> dict[str, Any]:
-    data: dict[str, Any] = unwrap_or(generator.info(), dict())
+) -> Dict[str, Serializable]:
+    data: Dict[str, Serializable] = dict()
 
     data["response"] = generator.chat(
         chat=[
@@ -31,6 +30,8 @@ def run(
             )
         ]
     )
+
+    data["stats"] = unwrap_or(generator.info(), dict())
 
     return data
 
@@ -47,21 +48,27 @@ def benchmark(
     logger: logging.Logger = logging.getLogger(__name__)
     logger.info(f"start: {start} - end: {end}")
 
-    iterator = bench.items()
+    iterator = enumerate(bench.items())
+    dcount = len(bench)
     if start is not None:
-        iterator = dropwhile(lambda item: item[0] != start[0], iterator)
+        iterator = dropwhile(lambda item: item[1][0] != start[0], iterator)
 
-    for dataset, val in iterator:
-        print("Start dataset:", dataset)
+    for didx, (dataset, val) in iterator:
+        print(
+            f"Start of the {dataset} ({didx + 1}/{dcount}) dataset at {datetime.now()}"
+        )
         os.makedirs(f"{results_dir}/{dataset}", exist_ok=True)
 
-        sub_iter = val.items()
+        sub_iter = enumerate(val.items())
+        qcount = len(val)
 
         if start is not None and dataset == start[0]:
-            sub_iter = dropwhile(lambda item: item[0] != start[1], sub_iter)
+            sub_iter = dropwhile(lambda item: item[1][0] != start[1], sub_iter)
 
-        for question, val in sub_iter:
-            print("Start question:", question)
+        for qidx, (question, val) in sub_iter:
+            print(
+                f"Start of the {question} ({qidx + 1}/{qcount}) question at {datetime.now()}"
+            )
             llm = model(val["options"].keys())
 
             with open(

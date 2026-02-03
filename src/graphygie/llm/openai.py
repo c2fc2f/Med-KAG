@@ -5,6 +5,7 @@ history.
 """
 
 from dataclasses import asdict
+import time
 from typing import Any, Optional, Callable, cast
 from openai.types.chat import (
     ChatCompletion,
@@ -68,12 +69,16 @@ class OpenAI(LLM):
         self._tools: list[Tool] = tools
         self._cleaner: Optional[Callable[[str], str]] = cleaner
         self._model_params: Optional[dict[str, Any]] = model_params
+        self._info = None
 
     def info(self) -> Optional[dict[str, Any]]:
-        return None
+        return self._info
 
     def chat(self, chat: Chat = list()) -> str:
         chat = self._chat + chat
+
+        start = time.perf_counter()
+
         response: ChatCompletion = self._client.chat.completions.create(
             model=self._model,
             messages=[
@@ -130,6 +135,9 @@ class OpenAI(LLM):
                 **(self._model_params or {}),
             )
             res = response.choices[0].message.content or ""
+
+        end = time.perf_counter()
+        self._info = {"time": (end - start) * 1000}
         if self._cleaner is not None:
             return self._cleaner(res)
         return res

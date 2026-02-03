@@ -4,6 +4,7 @@ interface that connects to a Neo4j graph database and formats query results as
 readable text.
 """
 
+import time
 from .database import Database
 from neo4j import Driver, GraphDatabase, Query, Result
 from neo4j.graph import Graph
@@ -55,24 +56,30 @@ class Neo4j(Database):
             prop_str = ", ".join(f"{k}: {v}" for k, v in props.items())
             return f" {{{prop_str}}}"
 
+        start = time.perf_counter()
+
         self._driver.verify_connectivity()
         with self._driver.session(database=self._database) as session:
             try:
                 result: Result = session.run(cast(Query, query))
             except:
+                end = time.perf_counter()
                 self._info = {
-                    "error": 1,
+                    "errors": 1,
                     "nodes": 0,
                     "edges": 0,
+                    "time": (end - start) * 1000,
                 }
                 return ""
 
             graph: Graph = result.graph()
 
+            end = time.perf_counter()
             self._info = {
-                "error": 0,
+                "errors": 0,
                 "nodes": len(graph.nodes),
                 "edges": len(graph.relationships),
+                "time": (end - start) * 1000,
             }
 
             node_labels: dict[int, str] = {}

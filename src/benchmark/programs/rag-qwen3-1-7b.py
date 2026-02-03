@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from benchmark.util import benchmark, system_prompt, parse_k_argument
 from graphygie.generation.basic_generator import BasicGenerator
 from graphygie.llm import LLM, Ollama, Message
-from graphygie.retrieval import Graph
+from graphygie.retrieval import GraphLLM
 from graphygie.retrieval.database import Database
 from graphygie.retrieval.database.neo4j import Neo4j
 from util import (
@@ -30,7 +30,7 @@ OLLAMA_URI = unwrap(os.getenv("OLLAMA_URI"))
 CURRENT_DIR: str = os.path.dirname(os.path.abspath(__file__))
 
 
-def base_grahygie() -> tuple[Graph, LLM]:
+def base_grahygie() -> tuple[GraphLLM, LLM]:
     database: Database = Neo4j(
         uri=NEO4J_URI,
         username=NEO4J_USERNAME,
@@ -55,7 +55,7 @@ def base_grahygie() -> tuple[Graph, LLM]:
         timeout=None,
     )
 
-    retrieval: Graph = Graph(llm=retrieval_llm, database=database)
+    retrieval: GraphLLM = GraphLLM(llm=retrieval_llm, database=database)
 
     generator_llm: LLM = Ollama(
         host=OLLAMA_URI,
@@ -68,7 +68,7 @@ def base_grahygie() -> tuple[Graph, LLM]:
 
 
 def graphygie(
-    retrieval: Graph, generator_llm: LLM, choices: list[str]
+    retrieval: GraphLLM, generator_llm: LLM, choices: list[str]
 ) -> BasicGenerator:
     return BasicGenerator(
         retriever=retrieval,

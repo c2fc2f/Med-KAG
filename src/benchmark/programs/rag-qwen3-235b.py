@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from benchmark.util import benchmark, system_prompt, parse_k_argument
 from graphygie.generation.basic_generator import BasicGenerator
 from graphygie.llm import LLM, OpenAI, Message
-from graphygie.retrieval import Graph
+from graphygie.retrieval import GraphLLM
 from graphygie.retrieval.database import Database
 from graphygie.retrieval.database.neo4j import Neo4j
 from util import (
@@ -31,7 +31,7 @@ OPENAI_TOKEN = unwrap(os.getenv("OPENAI_TOKEN"))
 CURRENT_DIR: str = os.path.dirname(os.path.abspath(__file__))
 
 
-def base_grahygie() -> tuple[Graph, LLM]:
+def base_grahygie() -> tuple[GraphLLM, LLM]:
     database: Database = Neo4j(
         uri=NEO4J_URI,
         username=NEO4J_USERNAME,
@@ -54,10 +54,9 @@ def base_grahygie() -> tuple[Graph, LLM]:
             )
         ],
         cleaner=compose(strip_code_fences, strip_after_double_newline),
-        timeout=None,
     )
 
-    retrieval: Graph = Graph(llm=retrieval_llm, database=database)
+    retrieval: GraphLLM = GraphLLM(llm=retrieval_llm, database=database)
 
     generator_llm: LLM = OpenAI(
         host=OPENAI_URI,
@@ -71,7 +70,7 @@ def base_grahygie() -> tuple[Graph, LLM]:
 
 
 def graphygie(
-    retrieval: Graph, generator_llm: LLM, choices: list[str]
+    retrieval: GraphLLM, generator_llm: LLM, choices: list[str]
 ) -> BasicGenerator:
     return BasicGenerator(
         retriever=retrieval,

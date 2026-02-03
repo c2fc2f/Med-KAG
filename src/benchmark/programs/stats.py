@@ -3,8 +3,10 @@ import os
 import re
 from pathlib import Path
 from statistics import mean, median
-from typing import Any, Union
+from typing import Any, Dict, List, Mapping, Union, cast
 from dataclasses import dataclass
+
+from util.serializable import Atome, Serializable
 
 
 CURRENT_DIR: str = os.path.dirname(os.path.abspath(__file__))
@@ -42,59 +44,53 @@ EMOJI: list[str] = [
 
 
 @dataclass()
-class ExtraStatsGraph:
-    errors: list[int]
-    nodes: list[int]
-    edges: list[int]
-
-    def __add__(self, other):
-        """Add two ExtraStatsGraph objects by concatenating their lists."""
-
-        if not isinstance(other, ExtraStatsGraph):
-            return NotImplemented
-
-        return ExtraStatsGraph(
-            errors=self.errors + other.errors,
-            nodes=self.nodes + other.nodes,
-            edges=self.edges + other.edges,
-        )
-
-
-ExtraStats = Union[ExtraStatsGraph]
-
-
 class Stats:
     method: str
     correct: int
     total: int
 
-    extra: None | ExtraStats
+    extra: dict[str, list[Atome]]
 
     def __init__(self, method: str) -> None:
         self.method = method
         self.correct = 0
         self.total = 0
 
-        self.extra = None
+        self.extra = dict()
 
-    def add(self, total: int, correct: int) -> None:
-        """Add total to the total count and correct to the correct count"""
+    def add(self, total: int, correct: int, extra: Mapping[str, Serializable]) -> None:
+        """
+        Updates aggregate counts and flattens nested dictionaries into JSON
+        paths.
+
+        Args:
+            total: Increment for the total count.
+            correct: Increment for the correct count.
+            extra: A nested dictionary to be flattened. Keys are joined by
+                dots (e.g., {'a': {'b': 1}} becomes 'a.b'). Leaf values are
+                appended to lists in self.extra.
+        """
+
+        def flatten_and_store(
+            data: Mapping[str, Serializable], prefix: str = ""
+        ) -> None:
+            """Recursively flattens a dictionary into dot-notated paths."""
+            for key, value in data.items():
+                path = f"{prefix}.{key}" if prefix else key
+
+                if isinstance(value, dict):
+                    flatten_and_store(value, path)
+                else:
+                    if path not in self.extra:
+                        self.extra[path] = []
+                    self.extra[path].append(value)
 
         self.total += total
         self.correct += correct
-
-    def add_extra(self, extra: None | ExtraStats) -> None:
-        """ "Add extra statistics to the current extra statistics"""
-
-        if extra is None:
-            return
-        if self.extra is None:
-            self.extra = extra
-        else:
-            self.extra += extra
+        flatten_and_store(extra)
 
 
-def load_benchmark(benchmark_path: str) -> Any:
+def load_benchmark(benchmark_path: str) -> Serializable:
     """Load the benchmark.json file"""
 
     with open(benchmark_path, "r", encoding="utf-8") as f:
@@ -109,24 +105,31 @@ def display_one_stats(info: Stats, ind: int) -> None:
     print(f"  ✅ Correct answers: {info.correct}/{info.total}")
     print(f"  📈 Accuracy rate: {accuracy:.2f}%")
     print()
+    print(f"  📉 {info.method.upper().replace('-', ' ')} METRICS")
 
-    match info.extra:
-        case None:
-            pass
-        case ExtraStatsGraph(errors, nodes, edges):
-            print(f"  📉 {info.method.upper().replace('-', ' ')} METRICS")
-            print(
-                f"     Errors     - Mean: {mean(errors):.2f} | Median: {median(errors):.2f}"
-            )
-            with_nodes = sum(1 for n in nodes if n >= 1)
-            print(
-                f"     Nodes      - Mean: {mean(nodes):.2f} | Median: {median(nodes):.2f} | ≥ 1: {with_nodes}/{len(nodes)} ({with_nodes / len(nodes) * 100:.1f}%)"
-            )
-            with_edges = sum(1 for n in edges if n >= 1)
-            print(
-                f"     Edges      - Mean: {mean(edges):.2f} | Median: {median(edges):.2f} | ≥ 1: {with_edges}/{len(edges)} ({with_edges / len(edges) * 100:.1f}%)"
-            )
-            print()
+    for key, values in info.extra.items():
+        numeric_values: List[Union[int, float]] = [
+            int(v) if isinstance(v, bool) else (v if v is not None else 0)
+            for v in values
+            if isinstance(v, (int, float, bool)) or v is None
+        ]
+
+        if not numeric_values:
+            continue
+
+        with_sth = sum(1 for n in numeric_values if n >= 1)
+        total_count = len(numeric_values)
+
+        avg = mean(numeric_values)
+        med = median(numeric_values)
+        nz_pct = with_sth / total_count * 100
+
+        print(
+            f"    {key:<20} - "
+            f"Mean: {avg:.2f} | "
+            f"Median: {med:.2f} | "
+            f"Non-empty: {with_sth}/{total_count} ({nz_pct:.1f}%)"
+        )
 
 
 def display_stats(
@@ -134,17 +137,17 @@ def display_stats(
 ) -> None:
     """Display all the statistics"""
 
-    print("━" * 60)
+    print("━" * 100)
     print("📊 ANALYSIS RESULTS")
-    print("━" * 60)
+    print("━" * 100)
     print()
 
     stats_methods: dict[str, list[Stats]] = dict()
 
     for dataset, infos in sorted(stats.items(), key=lambda e: e[0]):
-        print("━" * 45)
+        print("━" * 90)
         print(f"ANALYSIS RESULTS FOR {dataset}")
-        print("━" * 45)
+        print("━" * 90)
         print()
 
         for method, info in sorted(infos.items(), key=lambda e: e[0]):
@@ -155,35 +158,32 @@ def display_stats(
 
             display_one_stats(info, methods_ind[method])
 
-        print("━" * 45)
+        print("━" * 90)
         print()
 
-    print("━" * 45)
+    print("━" * 90)
     print("ANALYSIS RESULTS TOTAL")
-    print("━" * 45)
+    print("━" * 90)
     print()
 
     for method, infos in sorted(stats_methods.items(), key=lambda e: e[0]):
         s: Stats = Stats(method)
 
-        correct: int = sum([info.correct for info in infos])
-        total: int = sum([info.total for info in infos])
-        extra: None | ExtraStats = None
-
         for info in infos:
-            if info.extra is None:
-                continue
-            if extra is None:
-                extra = info.extra
-            else:
-                extra += info.extra
+            s.total += info.total
+            s.correct += info.correct
 
-        s.add(total, correct)
-        s.add_extra(extra)
+            # Assume consistent schema: all 'info' objects for a specific
+            # method provide the same set of keys in 'extra'.
+            for key, values in info.extra.items():
+                if key not in s.extra:
+                    s.extra[key] = list(values)
+                else:
+                    s.extra[key].extend(values)
 
         display_one_stats(s, methods_ind[method])
 
-    print("━" * 60)
+    print("━" * 100)
 
 
 def analyze_results(results_dir: str, benchmark_path: str) -> None:
@@ -236,27 +236,13 @@ def analyze_results(results_dir: str, benchmark_path: str) -> None:
 
             correct_answer: str = benchmark[dataset_name][question_name]["answer"]
             user_response: str = result.get("response")
+            user_stats: dict[str, Serializable] = result.get("stats")
 
-            match result_type.split("-")[0]:
-                case "rag":
-                    if result_type not in stats[dataset_name].keys():
-                        stats[dataset_name][result_type] = Stats(result_type)
-                    stats[dataset_name][result_type].add(
-                        1, 1 if user_response == correct_answer else 0
-                    )
-                    stats[dataset_name][result_type].add_extra(
-                        ExtraStatsGraph(
-                            [result.get("error", 0)],
-                            [result.get("nodes", 0)],
-                            [result.get("edges", 0)],
-                        )
-                    )
-                case _:
-                    if result_type not in stats[dataset_name].keys():
-                        stats[dataset_name][result_type] = Stats(result_type)
-                    stats[dataset_name][result_type].add(
-                        1, 1 if user_response == correct_answer else 0
-                    )
+            if result_type not in stats[dataset_name].keys():
+                stats[dataset_name][result_type] = Stats(result_type)
+            stats[dataset_name][result_type].add(
+                1, 1 if user_response == correct_answer else 0, user_stats
+            )
 
     display_stats(stats, methods_ind={v: k for k, v in enumerate(sorted(methods))})
 

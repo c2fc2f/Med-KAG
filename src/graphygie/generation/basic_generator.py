@@ -5,6 +5,8 @@ pipeline.
 """
 
 import logging
+from os import stat_result
+import time
 from graphygie.llm import LLM
 from graphygie.llm.chat import Chat
 from typing import Any, Callable, Optional
@@ -46,11 +48,21 @@ class BasicGenerator(LLM):
 
     def chat(self, chat: Chat = list()) -> str:
         logger: logging.Logger = logging.getLogger(__name__)
+        self._info = dict()
 
-        result: str = self._retriever.chat(chat)
-        self._info = self._retriever.info()
-        chat = self._maker(self._chat, result) + chat
+        start = time.perf_counter()
 
-        logger.info(result)
+        info: str = self._retriever.chat(chat)
+        self._info["retriever"] = self._retriever.info()
 
-        return self._generator.chat(chat)
+        logger.info(info)
+
+        chat = self._maker(self._chat, info) + chat
+
+        result: str = self._generator.chat(chat)
+        self._info["generator"] = self._generator.info()
+
+        end = time.perf_counter()
+        self._info["time"] = (end - start) * 1000
+
+        return result
