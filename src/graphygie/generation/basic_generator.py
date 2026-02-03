@@ -5,7 +5,6 @@ pipeline.
 """
 
 import logging
-from os import stat_result
 import time
 from graphygie.llm import LLM
 from graphygie.llm.chat import Chat

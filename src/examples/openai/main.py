@@ -16,7 +16,7 @@ process follows these steps:
 """
 
 from examples.no_graphygie_neo4j.main import OPENAI_TOKEN
-from graphygie.retrieval import Graph
+from graphygie.retrieval import GraphLLM
 from graphygie.retrieval.database import Neo4j, Database
 from graphygie.llm import LLM, Ollama, OpenAI, Message
 from graphygie.generation import BasicGenerator
@@ -85,7 +85,7 @@ def main() -> None:
     )
 
     # Create a graph-based retriever using the LLM and database
-    retrieval: LLM = Graph(llm=retrieval_llm, database=database)
+    retrieval: LLM = GraphLLM(llm=retrieval_llm, database=database)
 
     # Initialize the Ollama language model
     # - Connects to Ollama API using the host from environment variables

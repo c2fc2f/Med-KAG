@@ -14,7 +14,7 @@ queries. The process follows these steps:
 7. Format the user prompt and generate the final response.
 """
 
-from graphygie.retrieval import Graph
+from graphygie.retrieval import GraphLLM
 from graphygie.retrieval.database import Neo4j, Database
 from graphygie.llm import LLM, Ollama, Message
 from graphygie.generation import BasicGenerator
@@ -78,7 +78,7 @@ def main() -> None:
     )
 
     # Create a graph-based retriever using the LLM and database
-    retrieval: LLM = Graph(llm=retrieval_llm, database=database)
+    retrieval: LLM = GraphLLM(llm=retrieval_llm, database=database)
 
     # Initialize the Ollama language model
     # - Connects to Ollama API using the host from environment variables
