@@ -3,14 +3,17 @@ Benchmark Launcher
 Launches different benchmark functions based on command line parameter
 """
 
+from datetime import datetime
+from pathlib import Path
+
 import logging
 import os
 import sys
 import argparse
 import importlib
-from pathlib import Path
 
 CURRENT_DIR: str = os.path.dirname(os.path.abspath(__file__))
+LOG_DIR = "logs"
 
 BENCHMARK_MODULES: dict[str, str] = dict()
 
@@ -68,8 +71,20 @@ Available benchmarks:
     benchmark_func = load_benchmark_function(module_path)
 
     if args.logging:
+        os.makedirs(LOG_DIR, exist_ok=True)
+        log_path = os.path.join(
+            LOG_DIR,
+            datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f") + ".log",
+        )
+
         logging.basicConfig(
-            level=logging.INFO, format="{levelname}:{name}:\n{message}", style="{"
+            level=logging.INFO,
+            format="{levelname}:{name}:\n{message}",
+            style="{",
+            handlers=[
+                logging.FileHandler(log_path),
+                logging.StreamHandler(),
+            ],
         )
 
     print(f"Launching benchmark: {args.function}")

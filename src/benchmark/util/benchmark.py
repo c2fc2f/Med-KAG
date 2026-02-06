@@ -1,19 +1,19 @@
-import logging
-import time
 from typing import Any, Callable, Dict, Optional, Tuple
 from itertools import dropwhile
 from benchmark.util import user_prompt
-from graphygie.llm import LLM, Message
+from graphygie.chat import Chattable, Message
 from datetime import datetime
 from util import unwrap_or, Serializable
 
 import json
 import os
 import sys
+import logging
+import time
 
 
 def run(
-    base: str, generator: LLM, question: str, choices: dict[str, str]
+    base: str, generator: Chattable, question: str, choices: dict[str, str]
 ) -> Dict[str, Serializable]:
     data: Dict[str, Serializable] = dict()
 
@@ -23,7 +23,6 @@ def run(
                 role="user",
                 content=user_prompt(
                     base,
-                    intent="Answer to a multiple-choice question",
                     request=question,
                     choices=choices,
                 ),
@@ -41,7 +40,7 @@ def benchmark(
     results_dir: str,
     bench: dict[str, Any],
     base: str,
-    model: Callable[[list[str]], LLM],
+    model: Callable[[list[str]], Chattable],
     start: Optional[Tuple[str, str]] = None,
     end: Optional[Tuple[str, str]] = None,
 ) -> None:

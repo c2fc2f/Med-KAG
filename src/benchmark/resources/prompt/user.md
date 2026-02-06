@@ -1,6 +1,3 @@
-## Intent
-{{INTENT}}
-
 ## Question
 {{REQUEST}}
 

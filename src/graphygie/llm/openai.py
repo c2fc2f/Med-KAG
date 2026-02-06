@@ -1,11 +1,11 @@
 """
-This module defines the OpenAI class, a concrete implementation of the LLM
-interface, which uses the OpenAI API to generate responses from a chat
-history.
+This module defines the OpenAI class, a concrete implementation of the
+Chattable interface, which uses the OpenAI API to generate responses from a
+chat history.
 """
 
 from dataclasses import asdict
-import time
+import logging
 from typing import Any, Optional, Callable, cast
 from openai.types.chat import (
     ChatCompletion,
@@ -13,19 +13,18 @@ from openai.types.chat import (
     ChatCompletionMessageFunctionToolCall,
     ChatCompletionMessageParam,
 )
-import openai
 from openai.types.shared_params.function_definition import FunctionDefinition
-
+from graphygie.chat import Chattable, Chat, Message
 from .tools.tool import Tool
-from .llm import LLM
-from .chat import Chat, Message
 
 import json
+import openai
+import time
 
 
-class OpenAI(LLM):
+class OpenAI(Chattable):
     """
-    An implementation of the LLM interface using the OpenAI API.
+    An implementation of the Chattable interface using the OpenAI API.
 
     This class manages an ongoing chat session with a specified model,
     and optionally allows post-processing of the response using a cleaner
@@ -75,6 +74,8 @@ class OpenAI(LLM):
         return self._info
 
     def chat(self, chat: Chat = list()) -> str:
+        logger: logging.Logger = logging.getLogger(__name__)
+
         chat = self._chat + chat
 
         start: float = time.perf_counter()
@@ -137,7 +138,12 @@ class OpenAI(LLM):
             res = response.choices[0].message.content or ""
 
         end: float = time.perf_counter()
-        self._info = {"time": (end - start) * 1000}
+        self._info = {
+            "name": self.__class__.__name__,
+            "time": (end - start) * 1000,
+        }
+
+        logger.info(res)
         if self._cleaner is not None:
             return self._cleaner(res)
         return res

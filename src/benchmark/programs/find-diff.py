@@ -1,12 +1,12 @@
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Optional, Union
+
 import argparse
 import os
 import re
 import json
 import sys
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, Optional, Union
-
 
 CURRENT_DIR: str = os.path.dirname(os.path.abspath(__file__))
 RESULTS_DIR: str = os.path.join(CURRENT_DIR, "../results")

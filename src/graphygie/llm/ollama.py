@@ -1,23 +1,22 @@
 """
-This module defines the Ollama class, a concrete implementation of the LLM
-interface, which uses the Ollama API to generate responses from a chat
-history.
+This module defines the Ollama class, a concrete implementation of the
+Chattable interface, which uses the Ollama API to generate responses from a
+chat history.
 """
 
 from dataclasses import asdict
-import time
+import logging
 from typing import Any, Optional, Callable
 from ollama import Client, ChatResponse
-
-
+from graphygie.chat import Chattable, Chat, Message
 from .tools.tool import Tool
-from .llm import LLM
-from .chat import Chat, Message
+
+import time
 
 
-class Ollama(LLM):
+class Ollama(Chattable):
     """
-    An implementation of the LLM interface using the Ollama API.
+    An implementation of the Chattable interface using the Ollama API.
 
     This class manages an ongoing chat session with a specified model,
     and optionally allows post-processing of the response using a cleaner
@@ -63,9 +62,13 @@ class Ollama(LLM):
         return self._info
 
     def chat(self, chat: Chat = list()) -> str:
+        logger: logging.Logger = logging.getLogger(__name__)
+
         chat = self._chat + chat
 
         start: float = time.perf_counter()
+
+        logging.info([message.to_dict() for message in chat])
 
         response: ChatResponse = self._client.chat(
             model=self._model,
@@ -102,7 +105,12 @@ class Ollama(LLM):
             res = response.message.content or ""
 
         end: float = time.perf_counter()
-        self._info = {"time": (end - start) * 1000}
+        self._info = {
+            "name": self.__class__.__name__,
+            "time": (end - start) * 1000,
+        }
+
+        logger.info(res)
         if self._cleaner is not None:
             return self._cleaner(res)
         return res

@@ -1,13 +1,12 @@
+from pathlib import Path
+from statistics import mean, median, quantiles, stdev
+from typing import Any, List, Mapping, Tuple, Union
+from dataclasses import dataclass
+from util.serializable import Atome, Serializable
+
 import json
 import os
 import re
-from pathlib import Path
-from statistics import mean, median
-from typing import Any, List, Mapping, Union
-from dataclasses import dataclass
-
-from util.serializable import Atome, Serializable
-
 
 CURRENT_DIR: str = os.path.dirname(os.path.abspath(__file__))
 RESULTS_DIR: str = os.path.join(CURRENT_DIR, "../results")
@@ -97,15 +96,54 @@ def load_benchmark(benchmark_path: str) -> Serializable:
         return json.load(f)
 
 
-def display_one_stats(info: Stats, ind: int) -> None:
+def display_one_stats(
+    info: Stats,
+    ind: int,
+    key_len: int,
+    total_len: int,
+) -> None:
     """Display one statistic"""
 
     accuracy: float = (info.correct / info.total * 100) if info.total > 0 else 0
     print(f"{EMOJI[ind]} {info.method.upper().replace('-', ' ')}")
-    print(f"  ✅ Correct answers: {info.correct}/{info.total}")
+    print(f"  ✅ Correct answers: {info.correct:>{total_len}}/{info.total}")
     print(f"  📈 Accuracy rate: {accuracy:.2f}%")
     print()
     print(f"  📉 {info.method.upper().replace('-', ' ')} METRICS")
+
+    print(
+        " " * 2,
+        "|",
+        f"{'key':^{key_len}}",
+        "|",
+        f"{'Average':^9}",
+        "|",
+        f"{'Median':^9}",
+        "|",
+        f"{'Std Dev':^9}",
+        "|",
+        f"{'P90':^9}",
+        "|",
+        f"{'Non-empty':^{total_len * 2 + 5 + 5}}",
+        "|",
+    )
+
+    print(
+        " " * 2,
+        "|",
+        "-" * key_len,
+        "|",
+        "-" * 9,
+        "|",
+        "-" * 9,
+        "|",
+        "-" * 9,
+        "|",
+        "-" * 9,
+        "|",
+        "-" * (total_len * 2 + 5 + 5),
+        "|",
+    )
 
     for key, values in info.extra.items():
         numeric_values: List[Union[int, float]] = [
@@ -117,19 +155,33 @@ def display_one_stats(info: Stats, ind: int) -> None:
         if not numeric_values:
             continue
 
-        with_sth = sum(1 for n in numeric_values if n >= 1)
-        total_count = len(numeric_values)
+        with_sth: int = sum(1 for n in numeric_values if n >= 1)
+        total_count: int = len(numeric_values)
 
-        avg = mean(numeric_values)
-        med = median(numeric_values)
-        nz_pct = with_sth / total_count * 100
+        avg: float = mean(numeric_values)
+        med: float = median(numeric_values)
+        std: float = stdev(numeric_values) if len(numeric_values) > 1 else float("nan")
+        p90: float = quantiles(numeric_values, n=10)[8]
+        nz_pct: float = with_sth / total_count * 100
 
         print(
-            f"    {key:<20} - "
-            f"Mean: {avg:.2f} | "
-            f"Median: {med:.2f} | "
-            f"Non-empty: {with_sth}/{total_count} ({nz_pct:.1f}%)"
+            " " * 2,
+            "|",
+            f"{key:<{key_len}}",
+            "|",
+            f"{avg:9.2f}",
+            "|",
+            f"{med:9.2f}",
+            "|",
+            f"{std:9.2f}",
+            "|",
+            f"{p90:9.2f}",
+            "|",
+            f"{with_sth:>{total_len}}/{total_count} ({nz_pct:5.1f}%)",
+            "|",
         )
+
+    print()
 
 
 def display_stats(
@@ -141,6 +193,17 @@ def display_stats(
     print("📊 ANALYSIS RESULTS")
     print("━" * 100)
     print()
+
+    keyl = 0
+    totallm: Mapping[str, int] = dict()
+    for dataset, dstats in stats.items():
+        for mstat in dstats.values():
+            for key in mstat.extra.keys():
+                keyl = max(keyl, len(key))
+            totallm[dataset] = max(
+                totallm.get(dataset, 0),
+                len(str(mstat.total)),
+            )
 
     stats_methods: dict[str, list[Stats]] = dict()
 
@@ -155,7 +218,12 @@ def display_stats(
                 stats_methods[method] = []
             stats_methods[method].append(info)
 
-            display_one_stats(info, methods_ind[method])
+            display_one_stats(
+                info=info,
+                ind=methods_ind[method],
+                key_len=keyl,
+                total_len=totallm[dataset],
+            )
 
         print("━" * 90)
         print()
@@ -164,6 +232,10 @@ def display_stats(
     print("ANALYSIS RESULTS TOTAL")
     print("━" * 90)
     print()
+
+    totall: int = 0
+
+    rtotal: List[Tuple[Stats, int]] = list()
 
     for method, infos in sorted(stats_methods.items(), key=lambda e: e[0]):
         s: Stats = Stats(method)
@@ -180,7 +252,16 @@ def display_stats(
                 else:
                     s.extra[key].extend(values)
 
-        display_one_stats(s, methods_ind[method])
+        totall = max(totall, len(str(s.total)))
+        rtotal.append((s, methods_ind[method]))
+
+    for s, method_ind in rtotal:
+        display_one_stats(
+            info=s,
+            ind=method_ind,
+            key_len=keyl,
+            total_len=totall,
+        )
 
     print("━" * 100)
 
@@ -226,21 +307,22 @@ def analyze_results(results_dir: str, benchmark_path: str) -> None:
 
             if question_name not in benchmark[dataset_name]:
                 print(
-                    f"⚠️  Question '{question_name}' not found in benchmark[{dataset_name}]"
+                    f"⚠️  Question '{question_name}' not found in "
+                    f"benchmark[{dataset_name}]"
                 )
                 continue
 
             with open(result_file, "r", encoding="utf-8") as f:
                 result: Any = json.load(f)
 
-            correct_answer: str = benchmark[dataset_name][question_name]["answer"]
-            user_response: str = result.get("response")
-            user_stats: dict[str, Serializable] = result.get("stats")
+            correct: str = benchmark[dataset_name][question_name]["answer"]
+            model_res: str = result.get("response")
+            model_stats: dict[str, Serializable] = result.get("stats")
 
             if result_type not in stats[dataset_name].keys():
                 stats[dataset_name][result_type] = Stats(result_type)
             stats[dataset_name][result_type].add(
-                1, 1 if user_response == correct_answer else 0, user_stats
+                1, 1 if model_res == correct else 0, model_stats
             )
 
     display_stats(stats, methods_ind={v: k for k, v in enumerate(sorted(methods))})

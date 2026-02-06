@@ -5,7 +5,7 @@ initial (system) message of a chat and injects the retrieved content into the
 generator LLM.
 """
 
-from graphygie.llm import Chat, Message
+from graphygie.chat import Chat, Message
 
 
 def generator_system_prompt(chat: Chat, content: str) -> Chat:
@@ -27,9 +27,12 @@ def generator_system_prompt(chat: Chat, content: str) -> Chat:
     - ValueError: If the provided chat is empty.
     """
     if not chat:
-        raise ValueError("generator_system_prompt expected a non-empty chat.")
+        raise ValueError("expected a non-empty chat.")
 
     message: Message = chat[0]
+
+    if "{{RETRIEVAL}}" not in message.content:
+        raise ValueError("expected a chat which contains {{RETRIEVAL}}")
 
     if not content:
         content = "<empty>"

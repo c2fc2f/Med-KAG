@@ -3,28 +3,31 @@ This module defines the abstract interface for a Database.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any
+from graphygie.chat import Chattable, Chat
 
 
-class Database(ABC):
+class Database(Chattable, ABC):
     """
     Abstract base class for database access.
     """
 
     @abstractmethod
-    def query(self, query: str) -> str:
+    def query(self, query: str, **kwargs: Any) -> str:
         """
         Executes a query string against the database.
 
         Parameters:
         - query (str): The query to execute.
+        - **kwargs: Additional keyword arguments passed to the database for
+            the query.
 
         Returns:
         - str: The result of the query.
         """
         ...
 
-    @abstractmethod
-    def info(self) -> Optional[dict[str, Any]]:
-        """Returns statistics from the last query"""
-        ...
+    def chat(self, chat: Chat = list()) -> str:
+        return self.query(
+            "\n\n".join(f"Role: {m.role}\nContent: {m.content}" for m in chat)
+        )

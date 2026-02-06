@@ -1,27 +1,27 @@
 """
 This module defines the BasicGenerator class, which combines a retriever and a
-generator LLM to process a chat sequence and produce responses in a structured
+generator to process a chat sequence and produce responses in a structured
 pipeline.
 """
 
-import logging
-import time
-from graphygie.llm import LLM
-from graphygie.llm.chat import Chat
+from graphygie.chat import Chattable, Chat
 from typing import Any, Callable, Optional
 
+import logging
+import time
 
-class BasicGenerator(LLM):
+
+class BasicGenerator(Chattable):
     """
     A pipeline-based generator that uses two LLMs:
-    - A retriever LLM to fetch or infer relevant context.
-    - A generator LLM to produce the final response.
+    - A retriever to fetch or infer relevant context.
+    - A generator to produce the final response.
     """
 
     def __init__(
         self,
-        retriever: LLM,
-        generator: LLM,
+        retriever: Chattable,
+        generator: Chattable,
         chat: Chat,
         maker: Callable[[Chat, str], Chat],
     ) -> None:
@@ -29,15 +29,16 @@ class BasicGenerator(LLM):
         Initializes the BasicGenerator pipeline.
 
         Parameters:
-        - retriever (LLM): The LLM used to retrieve context or information.
-        - generator (LLM): The LLM used to generate the final response.
+        - retriever (Chattable): The LLM used to retrieve context or
+            information.
+        - generator (Chattable): The LLM used to generate the final response.
         - chat (Chat): The initial chat history.
         - maker (Callable[[Chat, str], Chat]): A function that merges the
             existing chat
           with the retrieved result to build the input for the generator.
         """
-        self._retriever: LLM = retriever
-        self._generator: LLM = generator
+        self._retriever: Chattable = retriever
+        self._generator: Chattable = generator
         self._chat: Chat = chat
         self._maker: Callable[[Chat, str], Chat] = maker
         self._info: Optional[dict[str, Any]] = None
@@ -47,7 +48,9 @@ class BasicGenerator(LLM):
 
     def chat(self, chat: Chat = list()) -> str:
         logger: logging.Logger = logging.getLogger(__name__)
-        self._info = dict()
+        self._info = {
+            "name": self.__class__.__name__,
+        }
 
         start: float = time.perf_counter()
 

@@ -1,39 +1,37 @@
 """
-This module defines the Graph retriever class, which combines a language model
-(LLM) and a graph database to answer chat-based queries.
-
-The LLM generates a query from the chat history, which is then executed on the
-database.
+This module defines the Graph retriever class, which combines a query
+generator and a graph database to answer chat-based queries.
 """
 
-import time
 from typing import Any, Optional
-from graphygie.llm import LLM
-from graphygie.llm.chat import Chat
 from util.unwrap import unwrap_or
+from graphygie.chat import Chattable, Chat
 from .database import Database
+
 import logging
+import time
 
 
-class GraphLLM(LLM):
+class Graph(Chattable):
     """
-    A graph-based retriever that uses an LLM to generate a query from a chat
-    history, then executes that query against a graph database.
+    A graph-based retriever that uses an retriever to generate a query from a
+    chat history, then executes that query against a graph database.
 
     Attributes:
-    - _llm (LLM): The language model used to generate queries.
+    - _retriever (Chattable): The retriever used to generate queries.
     - _database (Database): The graph database used to retrieve information.
     """
 
-    def __init__(self, llm: LLM, database: Database) -> None:
+    def __init__(self, query_gen: Chattable, database: Database) -> None:
         """
-        Initializes the Graph retriever with a language model and a database.
+        Initializes the Graph retriever with a query generator and a database.
 
         Parameters:
-        - llm (LLM): The language model used to interpret the chat history.
+        - query_gen (Chattable): The query generator used to interpret the
+            chat history into a query.
         - database (Database): The database queried with the generated output.
         """
-        self._llm: LLM = llm
+        self._query_gen: Chattable = query_gen
         self._database: Database = database
         self._info: Optional[dict[str, Any]] = None
 
@@ -42,12 +40,14 @@ class GraphLLM(LLM):
 
     def chat(self, chat: Chat = list()) -> str:
         logger: logging.Logger = logging.getLogger(__name__)
-        self._info = dict()
+        self._info = {
+            "name": self.__class__.__name__,
+        }
 
         start: float = time.perf_counter()
 
-        query: str = self._llm.chat(chat)
-        self._info["model"] = unwrap_or(self._llm.info(), dict())
+        query: str = self._query_gen.chat(chat)
+        self._info["query-generator"] = unwrap_or(self._query_gen.info(), dict())
         self._info["query"] = query
 
         logger.info(query)

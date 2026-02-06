@@ -17,9 +17,10 @@ queries. The process follows these steps:
 from langchain_ollama.embeddings import OllamaEmbeddings
 from neo4j import Driver, GraphDatabase, Result
 from graphygie.llm.tools import tool
-from graphygie.retrieval import GraphLLM
+from graphygie.retrieval import Graph
 from graphygie.retrieval.database import Neo4j, Database
-from graphygie.llm import LLM, Ollama, Message
+from graphygie.chat import Chattable, Message
+from graphygie.llm import Ollama
 from graphygie.generation import BasicGenerator
 import logging
 from util import (
@@ -100,7 +101,7 @@ def main() -> None:
     # - Connects to Ollama API using the host from environment variables
     # - Starts with a system prompt loaded from a file
     # - Applies a custom cleaner function to trim the model's response
-    retrieval_llm: LLM = Ollama(
+    retrieval_llm: Chattable = Ollama(
         host=OLLAMA_URI,
         model=MODEL,
         chat=[
@@ -116,11 +117,11 @@ def main() -> None:
     )
 
     # Create a graph-based retriever using the LLM and database
-    retrieval: LLM = GraphLLM(llm=retrieval_llm, database=database)
+    retrieval: Chattable = Graph(query_gen=retrieval_llm, database=database)
 
     # Initialize the Ollama language model
     # - Connects to Ollama API using the host from environment variables
-    generator_llm: LLM = Ollama(
+    generator_llm: Chattable = Ollama(
         host=unwrap(os.getenv("OLLAMA_URI")),
         model=MODEL,
     )
@@ -133,7 +134,7 @@ def main() -> None:
     # - Provides a generation LLM
     # - Starts with a system prompt loaded from a file
     # - Applies a custom maker function to generate final system prompt
-    generator: LLM = BasicGenerator(
+    generator: Chattable = BasicGenerator(
         retriever=retrieval,
         generator=generator_llm,
         chat=[
@@ -154,7 +155,6 @@ def main() -> None:
                 role="user",
                 content=user_prompt(
                     base,
-                    intent="Information request",
                     request="What is the link between Crohn's disease and ankylosing spondylitis?",
                 ),
             )

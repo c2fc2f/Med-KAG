@@ -1,4 +1,7 @@
+logs/
+
 .env
+.venv
 
 .ruff_cache/
 .mypy_cache/
