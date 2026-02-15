@@ -29,7 +29,9 @@ def native(choices_keys: list[str]) -> Chattable:
         host=OPENAI_URI,
         api_key=OPENAI_TOKEN,
         model="qwen/qwen3-235b-a22b:free",
-        model_params={"temperature": 0},
+        model_params={
+            "temperature": 0,
+        },
         chat=[
             Message(
                 role="system",

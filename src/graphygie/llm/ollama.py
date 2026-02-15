@@ -66,9 +66,9 @@ class Ollama(Chattable):
 
         chat = self._chat + chat
 
-        start: float = time.perf_counter()
-
         logging.info([message.to_dict() for message in chat])
+
+        start: float = time.perf_counter()
 
         response: ChatResponse = self._client.chat(
             model=self._model,
@@ -107,6 +107,7 @@ class Ollama(Chattable):
         end: float = time.perf_counter()
         self._info = {
             "name": self.__class__.__name__,
+            "full-response": res,
             "time": (end - start) * 1000,
         }
 

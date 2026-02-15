@@ -42,7 +42,9 @@ def base_grahygie() -> tuple[Graph, Chattable]:
         username=NEO4J_USERNAME,
         password=NEO4J_PASSWORD,
         database=NEO4J_DATABASE,
-        excluded_properties=["embedding"],
+        excluded_properties=[
+            "embedding",
+        ],
     )
 
     embedder: Embedder = OllamaEmbdder(
@@ -62,7 +64,11 @@ def base_grahygie() -> tuple[Graph, Chattable]:
     generator_llm: Chattable = Ollama(
         host=OLLAMA_URI,
         model="qwen3:1.7b",
-        model_params={"options": {"temperature": 0.0}},
+        model_params={
+            "options": {
+                "temperature": 0.0,
+            },
+        },
         cleaner=lambda s: s[0] if len(s) > 0 else s,
     )
 

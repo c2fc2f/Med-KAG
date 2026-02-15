@@ -27,7 +27,11 @@ def native(choices_keys: list[str]) -> Chattable:
     return Ollama(
         host=OLLAMA_URI,
         model="qwen3:1.7b",
-        model_params={"options": {"temperature": 0.0}},
+        model_params={
+            "options": {
+                "temperature": 0.0,
+            },
+        },
         chat=[
             Message(
                 role="system",

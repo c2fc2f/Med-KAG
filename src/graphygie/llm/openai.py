@@ -78,6 +78,8 @@ class OpenAI(Chattable):
 
         chat = self._chat + chat
 
+        logging.info([message.to_dict() for message in chat])
+
         start: float = time.perf_counter()
 
         response: ChatCompletion = self._client.chat.completions.create(
@@ -140,6 +142,7 @@ class OpenAI(Chattable):
         end: float = time.perf_counter()
         self._info = {
             "name": self.__class__.__name__,
+            "full-response": res,
             "time": (end - start) * 1000,
         }
 

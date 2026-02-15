@@ -2,6 +2,7 @@
     "response": "B",
     "stats": {
         "name": "Ollama",
-        "time": 21008.918507024646
+        "full-response": "B",
+        "time": 21400.716153904796
     }
 }

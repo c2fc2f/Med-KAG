@@ -46,14 +46,18 @@ def base_grahygie() -> tuple[Graph, Chattable]:
         username=NEO4J_USERNAME,
         password=NEO4J_PASSWORD,
         database=NEO4J_DATABASE,
-        excluded_properties=["embedding"],
+        excluded_properties=[
+            "embedding",
+        ],
     )
 
     retrieval_llm: Chattable = OpenAI(
         host=OPENAI_URI,
         api_key=OPENAI_TOKEN,
         model="qwen/qwen3-235b-a22b:free",
-        model_params={"temperature": 0},
+        model_params={
+            "temperature": 0,
+        },
         chat=[
             Message(
                 role="system",
@@ -69,7 +73,9 @@ def base_grahygie() -> tuple[Graph, Chattable]:
         host=OPENAI_URI,
         api_key=OPENAI_TOKEN,
         model="qwen/qwen3-235b-a22b:free",
-        model_params={"temperature": 0},
+        model_params={
+            "temperature": 0,
+        },
         cleaner=lambda s: s[0] if len(s) > 0 else s,
     )
 

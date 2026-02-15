@@ -177,7 +177,7 @@ def display_one_stats(
             "|",
             f"{p90:9.2f}",
             "|",
-            f"{with_sth:>{total_len}}/{total_count} ({nz_pct:5.1f}%)",
+            f"{with_sth:>{total_len}}/{total_count:>{total_len}} ({nz_pct:5.1f}%)",
             "|",
         )
 
