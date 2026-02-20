@@ -4,10 +4,11 @@ Cypher queries that perform vector searches followed by variable-depth
 neighborhood traversals.
 """
 
-from typing import Any, Optional
+from typing import override
 from graphygie.chat import Chattable, Chat
 from graphygie.embedding.embedder import Embedder
 from graphygie.embedding.embedding import Embedding
+from util import Serializable
 from util.unwrap import unwrap_or
 
 import time
@@ -33,19 +34,21 @@ class Vector2Cypher(Chattable):
         embedder: Embedder,
         top_k: int,
         distance: int = 0,
-        limit: Optional[int] = None,
+        limit: int | None = None,
     ) -> None:
         self._index: str = index
         self._embedder: Embedder = embedder
-        self._info: Optional[dict[str, Any]] = None
-        self._top_k = top_k
+        self._info: dict[str, Serializable] | None = None
+        self._top_k: int = top_k
         self._distance: int = distance
-        self._limit: Optional[int] = limit
+        self._limit: int | None = limit
 
-    def info(self) -> Optional[dict[str, Any]]:
+    @override
+    def info(self) -> dict[str, Serializable] | None:
         return self._info
 
-    def chat(self, chat: Chat = list()) -> str:
+    @override
+    def chat(self, chat: Chat) -> str:
         self._info = {"name": self.__class__.__name__}
 
         start: float = time.perf_counter()

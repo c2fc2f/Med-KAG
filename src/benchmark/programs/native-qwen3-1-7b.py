@@ -10,9 +10,9 @@ from util import (
 import json
 import os
 
-load_dotenv()
+_ = load_dotenv()
 
-OLLAMA_URI = unwrap(os.getenv("OLLAMA_URI"))
+OLLAMA_URI: str = unwrap(value=os.getenv("OLLAMA_URI"))
 
 CURRENT_DIR: str = os.path.dirname(os.path.abspath(__file__))
 RESULTS_DIR: str = os.path.join(CURRENT_DIR, "../results")
@@ -36,7 +36,7 @@ def native(choices_keys: list[str]) -> Chattable:
             Message(
                 role="system",
                 content=system_prompt(
-                    base=read_to_string(PROMPT_SYSTEM),
+                    base=read_to_string(path=PROMPT_SYSTEM),
                     choices_keys=choices_keys,
                 ),
             )
@@ -46,16 +46,20 @@ def native(choices_keys: list[str]) -> Chattable:
 
 
 def main() -> None:
-    os.makedirs(RESULTS_DIR, exist_ok=True)
+    os.makedirs(name=RESULTS_DIR, exist_ok=True)
 
     benchmark(
-        "native-qwen3-1.7b",
-        RESULTS_DIR,
-        json.load(open(BENCHMARK_FILE)),
-        read_to_string(PROMPT_USER),
-        native,
-        start=parse_k_argument(1),
-        end=parse_k_argument(2),
+        name="native-qwen3-1.7b",
+        results_dir=RESULTS_DIR,
+        bench=json.load(
+            fp=open(
+                file=BENCHMARK_FILE,
+            ),
+        ),
+        base=read_to_string(path=PROMPT_USER),
+        model=native,
+        start=parse_k_argument(k=1),
+        end=parse_k_argument(k=2),
     )
 
 

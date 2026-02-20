@@ -18,7 +18,8 @@ from langchain_ollama.embeddings import OllamaEmbeddings
 from neo4j import Driver, GraphDatabase, Result
 from graphygie.llm.tools import tool
 from graphygie.retrieval import Graph
-from graphygie.retrieval.database import Neo4j, Database
+from graphygie.retrieval.database import Database
+from graphygie.retrieval.database.neo4j import Neo4j
 from graphygie.chat import Chattable, Message
 from graphygie.llm import Ollama
 from graphygie.generation import BasicGenerator
@@ -36,17 +37,17 @@ from util import (
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
+_ = load_dotenv()
 
-NEO4J_URI = unwrap(os.getenv("NEO4J_URI"))
-NEO4J_USERNAME = unwrap(os.getenv("NEO4J_USERNAME"))
-NEO4J_PASSWORD = unwrap(os.getenv("NEO4J_PASSWORD"))
-NEO4J_DATABASE = unwrap(os.getenv("NEO4J_DATABASE"))
-NEO4J_EMBED_INDEX = unwrap(os.getenv("NEO4J_EMBED_INDEX"))
+NEO4J_URI: str = unwrap(value=os.getenv("NEO4J_URI"))
+NEO4J_USERNAME: str = unwrap(value=os.getenv("NEO4J_USERNAME"))
+NEO4J_PASSWORD: str = unwrap(value=os.getenv("NEO4J_PASSWORD"))
+NEO4J_DATABASE: str = unwrap(value=os.getenv("NEO4J_DATABASE"))
+NEO4J_EMBED_INDEX: str = unwrap(value=os.getenv("NEO4J_EMBED_INDEX"))
 
-OLLAMA_URI = unwrap(os.getenv("OLLAMA_URI"))
-MODEL = unwrap(os.getenv("MODEL"))
-EMBEDDING_MODEL = unwrap(os.getenv("EMBEDDING_MODEL"))
+OLLAMA_URI: str = unwrap(value=os.getenv("OLLAMA_URI"))
+MODEL: str = unwrap(value=os.getenv("MODEL"))
+EMBEDDING_MODEL: str = unwrap(value=os.getenv("EMBEDDING_MODEL"))
 
 CURRENT_DIR: str = os.path.dirname(os.path.abspath(__file__))
 
@@ -60,7 +61,7 @@ def get_k_closest_CUI(query_text: str, k: int = 1) -> list[str]:
     :param int k: The number of nearest neighbors to return
     """
     driver: Driver = GraphDatabase.driver(
-        NEO4J_URI, auth=(NEO4J_USERNAME, NEO4J_PASSWORD)
+        uri=NEO4J_URI, auth=(NEO4J_USERNAME, NEO4J_PASSWORD)
     )
     embedder: OllamaEmbeddings = OllamaEmbeddings(
         base_url=OLLAMA_URI, model=EMBEDDING_MODEL
@@ -68,7 +69,7 @@ def get_k_closest_CUI(query_text: str, k: int = 1) -> list[str]:
     driver.verify_connectivity()
     with driver.session(database=NEO4J_DATABASE) as session:
         results: Result = session.run(
-            """
+            query="""
             CALL db.index.vector.queryNodes($index_name, $k, $search_vector)
             YIELD node, score
             RETURN elementId(node) AS elementId 
@@ -122,12 +123,17 @@ def main() -> None:
     # Initialize the Ollama language model
     # - Connects to Ollama API using the host from environment variables
     generator_llm: Chattable = Ollama(
-        host=unwrap(os.getenv("OLLAMA_URI")),
+        host=unwrap(value=os.getenv("OLLAMA_URI")),
         model=MODEL,
     )
 
     # Load the user prompt template from a file
-    base: str = read_to_string(os.path.join(current_dir, "resources/prompt/user.md"))
+    base: str = read_to_string(
+        path=os.path.join(
+            current_dir,
+            "resources/prompt/user.md",
+        )
+    )
 
     # RAG Orchestrator
     # - Provides information retrieval
@@ -141,7 +147,9 @@ def main() -> None:
             Message(
                 role="system",
                 content=read_to_string(
-                    os.path.join(current_dir, "resources/prompt/generator_system.md")
+                    path=os.path.join(
+                        current_dir, "resources/prompt/generator_system.md"
+                    )
                 ),
             )
         ],

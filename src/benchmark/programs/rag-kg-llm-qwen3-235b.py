@@ -18,15 +18,15 @@ from util import (
 import json
 import os
 
-load_dotenv()
+_ = load_dotenv()
 
-NEO4J_URI = unwrap(os.getenv("NEO4J_URI"))
-NEO4J_USERNAME = unwrap(os.getenv("NEO4J_USERNAME"))
-NEO4J_PASSWORD = unwrap(os.getenv("NEO4J_PASSWORD"))
-NEO4J_DATABASE = unwrap(os.getenv("NEO4J_DATABASE"))
+NEO4J_URI: str = unwrap(value=os.getenv("NEO4J_URI"))
+NEO4J_USERNAME: str = unwrap(value=os.getenv("NEO4J_USERNAME"))
+NEO4J_PASSWORD: str = unwrap(value=os.getenv("NEO4J_PASSWORD"))
+NEO4J_DATABASE: str = unwrap(value=os.getenv("NEO4J_DATABASE"))
 
-OPENAI_URI = unwrap(os.getenv("OPENAI_URI"))
-OPENAI_TOKEN = unwrap(os.getenv("OPENAI_TOKEN"))
+OPENAI_URI: str = unwrap(value=os.getenv("OPENAI_URI"))
+OPENAI_TOKEN: str = unwrap(value=os.getenv("OPENAI_TOKEN"))
 
 CURRENT_DIR: str = os.path.dirname(os.path.abspath(__file__))
 RESULTS_DIR: str = os.path.join(CURRENT_DIR, "../results")
@@ -61,7 +61,7 @@ def base_grahygie() -> tuple[Graph, Chattable]:
         chat=[
             Message(
                 role="system",
-                content=read_to_string(PROMPT_RETRIEVAL),
+                content=read_to_string(path=PROMPT_RETRIEVAL),
             )
         ],
         cleaner=compose(strip_code_fences, strip_after_double_newline),
@@ -92,7 +92,7 @@ def graphygie(
             Message(
                 role="system",
                 content=system_prompt(
-                    base=read_to_string(PROMPT_SYSTEM),
+                    base=read_to_string(path=PROMPT_SYSTEM),
                     choices_keys=choices_keys,
                 ),
             )
@@ -102,17 +102,25 @@ def graphygie(
 
 
 def main() -> None:
-    os.makedirs(RESULTS_DIR, exist_ok=True)
+    os.makedirs(name=RESULTS_DIR, exist_ok=True)
 
     (retrieval, generator_llm) = base_grahygie()
     benchmark(
-        "rag-kg-llm-qwen3-235b",
-        RESULTS_DIR,
-        json.load(open(BENCHMARK_FILE)),
-        read_to_string(PROMPT_USER),
-        lambda choices: graphygie(retrieval, generator_llm, choices),
-        start=parse_k_argument(1),
-        end=parse_k_argument(2),
+        name="rag-kg-llm-qwen3-235b",
+        results_dir=RESULTS_DIR,
+        bench=json.load(
+            fp=open(
+                file=BENCHMARK_FILE,
+            ),
+        ),
+        base=read_to_string(path=PROMPT_USER),
+        model=lambda choices: graphygie(
+            retrieval,
+            generator_llm,
+            choices_keys=choices,
+        ),
+        start=parse_k_argument(k=1),
+        end=parse_k_argument(k=2),
     )
 
 

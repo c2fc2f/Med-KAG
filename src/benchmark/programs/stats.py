@@ -57,7 +57,7 @@ class Stats:
 
         self.extra = dict()
 
-    def add(self, total: int, correct: int, extra: Mapping[str, Serializable]) -> None:
+    def add(self, total: int, correct: int, extra: dict[str, Serializable]) -> None:
         """
         Updates aggregate counts and flattens nested dictionaries into JSON
         paths.
@@ -75,10 +75,10 @@ class Stats:
         ) -> None:
             """Recursively flattens a dictionary into dot-notated paths."""
             for key, value in data.items():
-                path = f"{prefix}.{key}" if prefix else key
+                path: str = f"{prefix}.{key}" if prefix else key
 
                 if isinstance(value, dict):
-                    flatten_and_store(value, path)
+                    flatten_and_store(data=value, prefix=path)
                 else:
                     if path not in self.extra:
                         self.extra[path] = []
@@ -86,14 +86,14 @@ class Stats:
 
         self.total += total
         self.correct += correct
-        flatten_and_store(extra)
+        flatten_and_store(data=extra)
 
 
-def load_benchmark(benchmark_path: str) -> Serializable:
+def load_benchmark(benchmark_path: str) -> dict[str, Serializable]:
     """Load the benchmark.json file"""
 
-    with open(benchmark_path, "r", encoding="utf-8") as f:
-        return json.load(f)
+    with open(file=benchmark_path, mode="r", encoding="utf-8") as f:
+        return json.load(fp=f)
 
 
 def display_one_stats(
@@ -146,7 +146,7 @@ def display_one_stats(
     )
 
     for key, values in info.extra.items():
-        numeric_values: List[Union[int, float]] = [
+        numeric_values: list[int | float] = [
             int(v) if isinstance(v, bool) else (v if v is not None else 0)
             for v in values
             if isinstance(v, (int, float, bool)) or v is None
@@ -158,10 +158,12 @@ def display_one_stats(
         with_sth: int = sum(1 for n in numeric_values if n >= 1)
         total_count: int = len(numeric_values)
 
-        avg: float = mean(numeric_values)
-        med: float = median(numeric_values)
-        std: float = stdev(numeric_values) if len(numeric_values) > 1 else float("nan")
-        p90: float = quantiles(numeric_values, n=10)[8]
+        avg: float = mean(data=numeric_values)
+        med: float = median(data=numeric_values)
+        std: float = (
+            stdev(data=numeric_values) if len(numeric_values) > 1 else float("nan")
+        )
+        p90: float = quantiles(data=numeric_values, n=10)[8]
         nz_pct: float = with_sth / total_count * 100
 
         print(
@@ -194,8 +196,8 @@ def display_stats(
     print("━" * 100)
     print()
 
-    keyl = 0
-    totallm: Mapping[str, int] = dict()
+    keyl: int = 0
+    totallm: dict[str, int] = dict()
     for dataset, dstats in stats.items():
         for mstat in dstats.values():
             for key in mstat.extra.keys():
@@ -235,7 +237,7 @@ def display_stats(
 
     totall: int = 0
 
-    rtotal: List[Tuple[Stats, int]] = list()
+    rtotal: list[tuple[Stats, int]] = list()
 
     for method, infos in sorted(stats_methods.items(), key=lambda e: e[0]):
         s: Stats = Stats(method)
@@ -269,12 +271,12 @@ def display_stats(
 def analyze_results(results_dir: str, benchmark_path: str) -> None:
     """Analyze all results"""
 
-    benchmark: Any = load_benchmark(benchmark_path)
+    benchmark: dict[str, Serializable] = load_benchmark(benchmark_path)
 
     stats: dict[str, dict[str, Stats]] = dict()
     methods: list[str] = list()
 
-    results_path = Path(results_dir)
+    results_path: Path = Path(results_dir)
 
     for dataset_dir in results_path.iterdir():
         if not dataset_dir.is_dir():
@@ -288,14 +290,14 @@ def analyze_results(results_dir: str, benchmark_path: str) -> None:
 
         stats[dataset_name] = dict()
 
-        for result_file in dataset_dir.glob("*.json"):
+        for result_file in dataset_dir.glob(pattern="*.json"):
             if result_file.stat().st_size == 0:
                 continue
 
             filename: str = result_file.name
 
             pattern = r"^(.+?)_(.+)\.json$"
-            match = re.match(pattern, filename)
+            match: re.Match[str] | None = re.match(pattern, filename)
 
             if match:
                 result_type: str = match.group(1)
@@ -307,37 +309,40 @@ def analyze_results(results_dir: str, benchmark_path: str) -> None:
 
             if question_name not in benchmark[dataset_name]:
                 print(
-                    f"⚠️  Question '{question_name}' not found in "
-                    f"benchmark[{dataset_name}]"
+                    f"⚠️  Question '{question_name}' not found in benchmark[{dataset_name}]"
                 )
                 continue
 
-            with open(result_file, "r", encoding="utf-8") as f:
-                result: Any = json.load(f)
+            with open(file=result_file, mode="r", encoding="utf-8") as f:
+                result: dict[str, str | dict[str, Serializable]] = json.load(fp=f)
 
-            correct: str = benchmark[dataset_name][question_name]["answer"]
-            model_res: str = result.get("response")
-            model_stats: dict[str, Serializable] = result.get("stats")
+                correct: str = benchmark[dataset_name][question_name]["answer"]
+                model_res: str = result.get("response")
+                model_stats: dict[str, Serializable] = result.get("stats")
 
-            if result_type not in stats[dataset_name].keys():
-                stats[dataset_name][result_type] = Stats(result_type)
-            stats[dataset_name][result_type].add(
-                1, 1 if model_res == correct else 0, model_stats
-            )
+                if result_type not in stats[dataset_name].keys():
+                    stats[dataset_name][result_type] = Stats(
+                        method=result_type,
+                    )
+                stats[dataset_name][result_type].add(
+                    total=1,
+                    correct=1 if model_res == correct else 0,
+                    extra=model_stats,
+                )
 
     display_stats(stats, methods_ind={v: k for k, v in enumerate(sorted(methods))})
 
 
 def main() -> None:
-    if not os.path.exists(RESULTS_DIR):
+    if not os.path.exists(path=RESULTS_DIR):
         print(f"❌ Error: Directory '{RESULTS_DIR}' does not exist")
-        exit(1)
+        exit(code=1)
 
-    if not os.path.exists(BENCHMARK_FILE):
+    if not os.path.exists(path=BENCHMARK_FILE):
         print(f"❌ Error: File '{BENCHMARK_FILE}' does not exist")
-        exit(1)
+        exit(code=1)
 
-    analyze_results(RESULTS_DIR, BENCHMARK_FILE)
+    analyze_results(results_dir=RESULTS_DIR, benchmark_path=BENCHMARK_FILE)
 
 
 if __name__ == "__main__":

@@ -4,7 +4,6 @@ generate responses based on a chat history.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Optional
 from graphygie.info import Info
 from .chat import Chat
 
@@ -16,7 +15,7 @@ class Chattable(Info, ABC):
     """
 
     @abstractmethod
-    def chat(self, chat: Chat = list()) -> str:
+    def chat(self, chat: Chat) -> str:
         """
         Handles a chat interaction by generating a query from the chat history
         and executing it.

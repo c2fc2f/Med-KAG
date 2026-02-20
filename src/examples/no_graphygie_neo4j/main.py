@@ -10,7 +10,7 @@ from util import unwrap
 import logging
 import os
 
-load_dotenv()
+_ = load_dotenv()
 
 NEO4J_URI = unwrap(os.getenv("NEO4J_URI"))
 NEO4J_USERNAME = unwrap(os.getenv("NEO4J_USERNAME"))

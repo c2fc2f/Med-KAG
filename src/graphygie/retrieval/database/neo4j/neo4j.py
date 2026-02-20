@@ -4,12 +4,14 @@ interface that connects to a Neo4j graph database and formats query results as
 readable text.
 """
 
-from neo4j import Driver, GraphDatabase, Query, Result
+from neo4j import Driver, GraphDatabase, Result
 from neo4j.graph import Graph
-from typing import Any, Optional, cast
+from typing import Any, LiteralString, cast, override
 from graphygie.retrieval.database import Database
 
 import time
+
+from util import Serializable
 
 
 class Neo4j(Database):
@@ -26,7 +28,7 @@ class Neo4j(Database):
         username: str,
         password: str,
         database: str,
-        excluded_properties: list[str] = list(),
+        excluded_properties: list[str] | None = None,
     ) -> None:
         """
         Initializes the Neo4j driver.
@@ -43,14 +45,16 @@ class Neo4j(Database):
 
         self._driver: Driver = GraphDatabase.driver(uri, auth=(username, password))
         self._database: str = database
-        self._excluded_properties: list[str] = excluded_properties
-        self._info: Optional[dict[str, Any]] = None
+        self._excluded_properties: list[str] | None = excluded_properties
+        self._info: dict[str, Serializable] | None = None
 
-    def info(self) -> Optional[dict[str, Any]]:
+    @override
+    def info(self) -> dict[str, Serializable] | None:
         return self._info
 
+    @override
     def query(self, query: str, **kwargs: Any) -> str:
-        def format_properties(props: dict) -> str:
+        def format_properties(props: dict[str, str]) -> str:
             """Helper method to format properties as a string."""
             if not props:
                 return ""
@@ -62,7 +66,7 @@ class Neo4j(Database):
         self._driver.verify_connectivity()
         with self._driver.session(database=self._database) as session:
             try:
-                result: Result = session.run(cast(Query, query), **kwargs)
+                result: Result = session.run(cast(LiteralString, query), **kwargs)
             except:
                 endt: float = time.perf_counter()
                 self._info = {
@@ -86,34 +90,34 @@ class Neo4j(Database):
             }
 
             node_labels: dict[int, str] = {}
-            node_properties: dict[int, dict] = {}
+            node_properties: dict[int, dict[str, str]] = {}
             for node in graph.nodes:
                 name = node.get("name") or node.get("title") or f"Node_{node.id}"
                 node_labels[node.id] = name
                 node_properties[node.id] = {
                     k: v
                     for k, v in dict(node).items()
-                    if k not in ["name", "title"] + self._excluded_properties
+                    if k not in ["name", "title"] + (self._excluded_properties or [])
                 }
 
             textual_rels: list[str] = []
             for rel in graph.relationships:
                 if rel.start_node is None:
                     start: str = "<empty>"
-                    start_props: dict = {}
+                    start_props: dict[str, str] = {}
                 else:
                     start = node_labels[rel.start_node.id]
                     start_props = node_properties[rel.start_node.id]
 
                 if rel.end_node is None:
                     end: str = "<empty>"
-                    end_props: dict = {}
+                    end_props: dict[str, str] = {}
                 else:
                     end = node_labels[rel.end_node.id]
                     end_props = node_properties[rel.end_node.id]
 
                 rel_type: str = rel.type
-                rel_props: dict = dict(rel)
+                rel_props: dict[str, str] = dict(rel)
 
                 start_str = f"<{start}:{format_properties(start_props)}>"
                 end_str = f"<{end}:{format_properties(end_props)}>"

@@ -11,6 +11,8 @@ import os
 import sys
 import argparse
 import importlib
+from types import ModuleType
+from typing import Callable
 
 CURRENT_DIR: str = os.path.dirname(os.path.abspath(__file__))
 LOG_DIR = "logs"
@@ -18,35 +20,35 @@ LOG_DIR = "logs"
 BENCHMARK_MODULES: dict[str, str] = dict()
 
 
-def load_modules():
+def load_modules() -> None:
     """
     Add to BENCHMARK_MODULES the list of module in benchmark.programs
     """
-    for function in Path(os.path.join(CURRENT_DIR, "programs")).glob("*.py"):
-        function = function.name.removesuffix(".py")
-        if function == "__init__":
+    for function in Path(os.path.join(CURRENT_DIR, "programs")).glob(pattern="*.py"):
+        function_name: str = function.name.removesuffix(".py")
+        if function_name == "__init__":
             continue
 
-        BENCHMARK_MODULES[function] = f"benchmark.programs.{function}"
+        BENCHMARK_MODULES[function_name] = f"benchmark.programs.{function_name}"
 
 
-def load_benchmark_function(module_path):
+def load_benchmark_function(module_path: str) -> Callable[[], None]:
     """
     Dynamically import a module and return its main function
     Handles modules with hyphens in their names
     """
     try:
-        module = importlib.import_module(module_path)
+        module: ModuleType = importlib.import_module(name=module_path)
         return module.main
     except (ImportError, AttributeError) as e:
         raise ImportError(f"Cannot load module '{module_path}': {e}")
 
 
-def main():
+def main() -> None:
     """Main entry point for the benchmark launcher"""
     load_modules()
 
-    parser = argparse.ArgumentParser(
+    parser: argparse.ArgumentParser = argparse.ArgumentParser(
         description="Launch different benchmark functions",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=f"""
@@ -55,11 +57,14 @@ Available benchmarks:
         """,
     )
 
-    parser.add_argument(
-        "function", choices=BENCHMARK_MODULES.keys(), help="Function to run"
+    _ = parser.add_argument(
+        "function",
+        choices=BENCHMARK_MODULES.keys(),
+        help="Function to run",
+        type=str,
     )
 
-    parser.add_argument(
+    _ = parser.add_argument(
         "--logging",
         action="store_true",
         help="Enable logging output (disabled by default).",
@@ -67,14 +72,17 @@ Available benchmarks:
 
     args, remaining_args = parser.parse_known_args()
 
-    module_path = BENCHMARK_MODULES[args.function]
-    benchmark_func = load_benchmark_function(module_path)
+    function: str = str(args.function)
+    is_logging: bool = bool(args.logging)
 
-    if args.logging:
-        os.makedirs(LOG_DIR, exist_ok=True)
-        log_path = os.path.join(
+    module_path: str = BENCHMARK_MODULES[function]
+    benchmark_func: Callable[[], None] = load_benchmark_function(module_path)
+
+    if is_logging:
+        os.makedirs(name=LOG_DIR, exist_ok=True)
+        log_path: str = os.path.join(
             LOG_DIR,
-            datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f") + ".log",
+            datetime.now().strftime(format="%Y-%m-%d_%H-%M-%S-%f") + ".log",
         )
 
         logging.basicConfig(
@@ -82,23 +90,23 @@ Available benchmarks:
             format="{levelname}:{name}:\n{message}",
             style="{",
             handlers=[
-                logging.FileHandler(log_path),
+                logging.FileHandler(filename=log_path),
                 logging.StreamHandler(),
             ],
         )
 
-    print(f"Launching benchmark: {args.function}")
+    print(f"Launching benchmark: {function}")
     print("-" * 50)
 
     try:
-        original_argv = sys.argv
+        original_argv: list[str] = sys.argv
         sys.argv = [sys.argv[0]] + remaining_args
 
         benchmark_func()
 
         sys.argv = original_argv
     except Exception as e:
-        print(f"Error running benchmark '{args.function}': {e}", file=sys.stderr)
+        print(f"Error running benchmark '{function}': {e}", file=sys.stderr)
         sys.exit(1)
 
 

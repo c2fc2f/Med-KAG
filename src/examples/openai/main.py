@@ -15,9 +15,9 @@ process follows these steps:
 7. Format the user prompt and generate the final response.
 """
 
-from examples.no_graphygie_neo4j.main import OPENAI_TOKEN
 from graphygie.retrieval import Graph
-from graphygie.retrieval.database import Neo4j, Database
+from graphygie.retrieval.database import Database
+from graphygie.retrieval.database.neo4j import Neo4j
 from graphygie.chat import Chattable, Message
 from graphygie.llm import Ollama, OpenAI
 from graphygie.generation import BasicGenerator
@@ -35,17 +35,17 @@ from util import (
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
+_ = load_dotenv()
 
-NEO4J_URI = unwrap(os.getenv("NEO4J_URI"))
-NEO4J_USERNAME = unwrap(os.getenv("NEO4J_USERNAME"))
-NEO4J_PASSWORD = unwrap(os.getenv("NEO4J_PASSWORD"))
-NEO4J_DATABASE = unwrap(os.getenv("NEO4J_DATABASE"))
+NEO4J_URI: str = unwrap(value=os.getenv("NEO4J_URI"))
+NEO4J_USERNAME: str = unwrap(value=os.getenv("NEO4J_USERNAME"))
+NEO4J_PASSWORD: str = unwrap(value=os.getenv("NEO4J_PASSWORD"))
+NEO4J_DATABASE: str = unwrap(value=os.getenv("NEO4J_DATABASE"))
 
-OLLAMA_URI = unwrap(os.getenv("OLLAMA_URI"))
+OLLAMA_URI: str = unwrap(value=os.getenv("OLLAMA_URI"))
 
-OPENAI_URI = unwrap(os.getenv("OPENAI_URI"))
-OPENAI_TOKEN = unwrap(os.getenv("OPENAI_TOKEN"))
+OPENAI_URI: str = unwrap(value=os.getenv("OPENAI_URI"))
+OPENAI_TOKEN: str = unwrap(value=os.getenv("OPENAI_TOKEN"))
 
 
 def main() -> None:
@@ -77,7 +77,9 @@ def main() -> None:
             Message(
                 role="system",
                 content=read_to_string(
-                    os.path.join(current_dir, "resources/prompt/retrieval_system.md")
+                    path=os.path.join(
+                        current_dir, "resources/prompt/retrieval_system.md"
+                    )
                 ),
             )
         ],
@@ -97,7 +99,9 @@ def main() -> None:
     )
 
     # Load the user prompt template from a file
-    base: str = read_to_string(os.path.join(current_dir, "resources/prompt/user.md"))
+    base: str = read_to_string(
+        path=os.path.join(current_dir, "resources/prompt/user.md")
+    )
 
     # RAG Orchestrator
     # - Provides information retrieval
@@ -111,7 +115,9 @@ def main() -> None:
             Message(
                 role="system",
                 content=read_to_string(
-                    os.path.join(current_dir, "resources/prompt/generator_system.md")
+                    path=os.path.join(
+                        current_dir, "resources/prompt/generator_system.md"
+                    )
                 ),
             )
         ],

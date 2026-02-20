@@ -80,6 +80,8 @@
 
               pkgs.ruff
               pkgs.mypy
+              pkgs.pyright
+              pkgs.basedpyright
             ];
             env = {
               UV_NO_CACHE = "1";

@@ -6,10 +6,11 @@ chat history.
 
 from dataclasses import asdict
 import logging
-from typing import Any, Optional, Callable
+from typing import Any, Callable, override
 from ollama import Client, ChatResponse
 from graphygie.chat import Chattable, Chat, Message
 from graphygie.info.info import Info
+from util import Serializable
 from .tools.tool import Tool
 
 import time
@@ -27,11 +28,11 @@ class Ollama(Chattable):
     def __init__(
         self,
         model: str,
-        chat: Chat = list(),
-        host: Optional[str] = None,
-        tools: list[Tool] = list(),
-        cleaner: Optional[Callable[[str], str]] = None,
-        model_params: Optional[dict[str, Any]] = None,
+        chat: Chat | None = None,
+        host: str | None = None,
+        tools: list[Tool] | None = None,
+        cleaner: Callable[[str], str] | None = None,
+        model_params: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -53,19 +54,21 @@ class Ollama(Chattable):
 
         self._client: Client = Client(host, **kwargs)
         self._model: str = model
-        self._chat: Chat = chat
-        self._tools: list[Tool] = tools
-        self._cleaner: Optional[Callable[[str], str]] = cleaner
-        self._model_params: Optional[dict[str, Any]] = model_params
-        self._info: Optional[dict[str, Any]] = None
+        self._chat: Chat | None = chat
+        self._tools: list[Tool] | None = tools
+        self._cleaner: Callable[[str], str] | None = cleaner
+        self._model_params: dict[str, Any] | None = model_params
+        self._info: dict[str, Serializable] | None = None
 
-    def info(self) -> Optional[dict[str, Any]]:
+    @override
+    def info(self) -> dict[str, Serializable] | None:
         return self._info
 
-    def chat(self, chat: Chat = list()) -> str:
-        logger: logging.Logger = logging.getLogger(__name__)
+    @override
+    def chat(self, chat: Chat) -> str:
+        logger: logging.Logger = logging.getLogger(name=__name__)
 
-        chat = self._chat + chat
+        chat = self._chat or [] + chat
 
         logging.info([message.to_dict() for message in chat])
 
@@ -83,7 +86,7 @@ class Ollama(Chattable):
                         "parameters": asdict(tool.parameters),
                     },
                 }
-                for tool in self._tools
+                for tool in self._tools or []
             ],
             **(self._model_params or {}),
         )
@@ -92,7 +95,11 @@ class Ollama(Chattable):
             chat.append(Message(response.message.role, res))
             for call in response.message.tool_calls:
                 func: Callable | None = next(
-                    (tool for tool in self._tools if tool.name == call.function.name),
+                    (
+                        tool
+                        for tool in self._tools or []
+                        if tool.name == call.function.name
+                    ),
                     None,
                 )
                 result = func(**call.function.arguments) if func is not None else ""
@@ -100,7 +107,7 @@ class Ollama(Chattable):
             response = self._client.chat(
                 model=self._model,
                 messages=[message.to_dict() for message in chat],
-                tools=[tool._func for tool in self._tools],
+                tools=[tool._func for tool in self._tools or []],
                 **(self._model_params or {}),
             )
             res = response.message.content or ""
@@ -112,7 +119,7 @@ class Ollama(Chattable):
             "time": (end - start) * 1000,
         }
 
-        logger.info(res)
+        logger.info(msg=res)
         if self._cleaner is not None:
             res = self._cleaner(res)
             if isinstance(self._cleaner, Info):

@@ -1,4 +1,2 @@
-from typing import Dict, List, Union
-
-type Atome = Union[str, int, float, bool, List[Serializable], List[Atome], None]
-type Serializable = Union[Dict[str, Serializable], Atome]
+type Atome = str | int | float | bool | list[Serializable] | list[Atome] | None
+type Serializable = dict[str, Serializable] | Atome

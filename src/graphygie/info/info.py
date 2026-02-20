@@ -4,7 +4,7 @@ representing and transmitting information.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from util.serializable import Serializable
 
 
 class Info(ABC):
@@ -13,7 +13,7 @@ class Info(ABC):
     """
 
     @abstractmethod
-    def info(self) -> Optional[dict[str, Any]]:
+    def info(self) -> dict[str, Serializable] | None:
         """
         Returns a dictionary of statistics from the most recent information
         transmission.

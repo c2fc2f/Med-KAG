@@ -5,7 +5,7 @@ Embedding objects.
 """
 
 from abc import ABC, abstractmethod
-from typing import List
+from typing import override
 from graphygie.chat.chat import Chat
 from graphygie.chat.chattable import Chattable
 from .embedding import Embedding
@@ -20,7 +20,7 @@ class Embedder(Chattable, ABC):
     """
 
     @abstractmethod
-    def embeds(self, inputs: List[str] = list()) -> List[Embedding]:
+    def embeds(self, inputs: list[str]) -> list[Embedding]:
         """
         Transforms a list of strings into a list of Embedding objects.
 
@@ -34,7 +34,8 @@ class Embedder(Chattable, ABC):
         """
         ...
 
-    def chat(self, chat: Chat = list()) -> str:
+    @override
+    def chat(self, chat: Chat) -> str:
         return "\n".join(
             " ".join(str(em) for em in e)
             for e in self.embeds(

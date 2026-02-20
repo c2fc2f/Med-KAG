@@ -1,6 +1,6 @@
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any, Callable
 from itertools import dropwhile
-from benchmark.util import user_prompt
+from .user_prompt import user_prompt
 from graphygie.chat import Chattable, Message
 from datetime import datetime
 from util import unwrap_or, Serializable
@@ -14,8 +14,8 @@ import time
 
 def run(
     base: str, generator: Chattable, question: str, choices: dict[str, str]
-) -> Dict[str, Serializable]:
-    data: Dict[str, Serializable] = dict()
+) -> dict[str, Serializable]:
+    data: dict[str, Serializable] = dict()
 
     data["response"] = generator.chat(
         chat=[
@@ -30,7 +30,7 @@ def run(
         ]
     )
 
-    data["stats"] = unwrap_or(generator.info(), dict())
+    data["stats"] = unwrap_or(value=generator.info(), default=dict())
 
     return data
 
@@ -41,10 +41,10 @@ def benchmark(
     bench: dict[str, Any],
     base: str,
     model: Callable[[list[str]], Chattable],
-    start: Optional[Tuple[str, str]] = None,
-    end: Optional[Tuple[str, str]] = None,
+    start: tuple[str, str] | None = None,
+    end: tuple[str, str] | None = None,
 ) -> None:
-    logger: logging.Logger = logging.getLogger(__name__)
+    logger: logging.Logger = logging.getLogger(name=__name__)
     logger.info(f"start: {start} - end: {end}")
 
     iterator = enumerate(bench.items())
@@ -59,7 +59,7 @@ def benchmark(
         os.makedirs(f"{results_dir}/{dataset}", exist_ok=True)
 
         sub_iter = enumerate(val.items())
-        qcount = len(val)
+        qcount: int = len(val)
 
         if start is not None and dataset == start[0]:
             sub_iter = dropwhile(lambda item: item[1][0] != start[1], sub_iter)
@@ -71,27 +71,37 @@ def benchmark(
             llm = model(val["options"].keys())
 
             with open(
-                f"{results_dir}/{dataset}/{name}_{question}.json",
-                "w",
+                file=f"{results_dir}/{dataset}/{name}_{question}.json",
+                mode="w",
                 encoding="utf-8",
             ) as f:
                 while True:
                     try:
-                        data = run(base, llm, val["question"], val["options"])
+                        data: dict[str, Serializable] = run(
+                            base,
+                            generator=llm,
+                            question=val["question"],
+                            choices=val["options"],
+                        )
                         break
                     except Exception as e:
                         print(str(e))
                         print("Retry")
                         time.sleep(30)
 
-                logger.info(data)
-                json.dump(data, f, indent=4, ensure_ascii=False)
+                logger.info(msg=data)
+                json.dump(
+                    obj=data,
+                    fp=f,
+                    indent=4,
+                    ensure_ascii=False,
+                )
 
             if end is not None and dataset == end[0] and question == end[1]:
                 return
 
 
-def parse_k_argument(k: int) -> Optional[Tuple[str, str]]:
+def parse_k_argument(k: int) -> tuple[str, str] | None:
     """
     Parse the k-nth command-line argument and split by '/'
     Returns a tuple of two strings if valid, None otherwise
@@ -99,8 +109,8 @@ def parse_k_argument(k: int) -> Optional[Tuple[str, str]]:
     if len(sys.argv) <= k:
         return None
 
-    first_arg = sys.argv[k]
-    parts = first_arg.split("/")
+    first_arg: str = sys.argv[k]
+    parts: list[str] = first_arg.split(sep="/")
 
     if len(parts) == 2:
         return (parts[0], parts[1])

@@ -3,7 +3,8 @@ This module defines the Graph retriever class, which combines a query
 generator and a graph database to answer chat-based queries.
 """
 
-from typing import Any, Optional
+from typing import override
+from util import Serializable
 from util.unwrap import unwrap_or
 from graphygie.chat import Chattable, Chat
 from .database import Database
@@ -33,13 +34,15 @@ class Graph(Chattable):
         """
         self._query_gen: Chattable = query_gen
         self._database: Database = database
-        self._info: Optional[dict[str, Any]] = None
+        self._info: dict[str, Serializable] | None = None
 
-    def info(self) -> Optional[dict[str, Any]]:
+    @override
+    def info(self) -> dict[str, Serializable] | None:
         return self._info
 
-    def chat(self, chat: Chat = list()) -> str:
-        logger: logging.Logger = logging.getLogger(__name__)
+    @override
+    def chat(self, chat: Chat) -> str:
+        logger: logging.Logger = logging.getLogger(name=__name__)
         self._info = {
             "name": self.__class__.__name__,
         }
@@ -47,13 +50,19 @@ class Graph(Chattable):
         start: float = time.perf_counter()
 
         query: str = self._query_gen.chat(chat)
-        self._info["query-generator"] = unwrap_or(self._query_gen.info(), dict())
+        self._info["query-generator"] = unwrap_or(
+            value=self._query_gen.info(),
+            default=dict(),
+        )
         self._info["query"] = query
 
-        logger.info(query)
+        logger.info(msg=query)
 
         result: str = self._database.query(query)
-        self._info["database"] = unwrap_or(self._database.info(), dict())
+        self._info["database"] = unwrap_or(
+            value=self._database.info(),
+            default=dict(),
+        )
 
         end: float = time.perf_counter()
 

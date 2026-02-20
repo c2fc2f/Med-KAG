@@ -1,12 +1,14 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any 
 
 import argparse
 import os
 import re
 import json
 import sys
+
+from util import Serializable
 
 CURRENT_DIR: str = os.path.dirname(os.path.abspath(__file__))
 RESULTS_DIR: str = os.path.join(CURRENT_DIR, "../results")
@@ -15,25 +17,33 @@ BENCHMARK_FILE: str = os.path.join(CURRENT_DIR, "../benchmark.json")
 
 @dataclass()
 class Pair:
-    method1: Optional[Path] = None
-    method2: Optional[Path] = None
+    method1: Path | None = None
+    method2: Path | None = None
 
 
-def load_json(file_path: Union[str, Path]) -> Optional[Any]:
+def load_json(file_path: str | Path) -> Any | None:
     """Helper function to load a JSON file."""
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        with open(file=file_path, mode="r", encoding="utf-8") as f:
+            return json.load(fp=f)
     except Exception as e:
         print(f"Error loading {file_path}: {e}", file=sys.stderr)
         return None
 
 
 def find_diff(
-    results: Path, benchmark: dict, method1: str, method2: str, check: bool
+    results: Path,
+    benchmark: dict[str, Serializable],
+    method1: str,
+    method2: str,
+    check: bool,
 ) -> None:
-    method1_pattern: re.Pattern = re.compile(rf"^{re.escape(method1)}_(.+)\.json$")
-    method2_pattern: re.Pattern = re.compile(rf"^{re.escape(method2)}_(.+)\.json$")
+    method1_pattern: re.Pattern[str] = re.compile(
+        rf"^{re.escape(pattern=method1)}_(.+)\.json$"
+    )
+    method2_pattern: re.Pattern[str] = re.compile(
+        rf"^{re.escape(pattern=method2)}_(.+)\.json$"
+    )
 
     print("━" * 110)
 
@@ -46,7 +56,7 @@ def find_diff(
         for file in dataset.glob("*.json"):
             filename: str = file.name
 
-            method1_match: Optional[re.Match] = method1_pattern.match(filename)
+            method1_match: re.Match[str] | None = method1_pattern.match(filename)
             if method1_match:
                 file_id = method1_match.group(1)
                 if file_id not in pairs:
@@ -54,7 +64,7 @@ def find_diff(
                 pairs[file_id].method1 = file
                 continue
 
-            method2_match: Optional[re.Match] = method2_pattern.match(filename)
+            method2_match: re.Match[str] | None = method2_pattern.match(filename)
             if method2_match:
                 file_id = method2_match.group(1)
                 if file_id not in pairs:
@@ -76,17 +86,17 @@ def find_diff(
             if file_pair.method1 is None or file_pair.method2 is None:
                 continue
 
-            method1_content: Optional[dict] = load_json(file_pair.method1)
-            method2_content: Optional[dict] = load_json(file_pair.method2)
+            method1_content: dict[str, str] | None = load_json(file_path=file_pair.method1)
+            method2_content: dict[str, str] | None = load_json(file_path=file_pair.method2)
 
             if method1_content is None or method2_content is None:
                 continue
 
-            method1_ans: Optional[str] = method1_content.get("response")
-            method2_ans: Optional[str] = method2_content.get("response")
+            method1_ans: str | None = method1_content.get("response")
+            method2_ans: str | None = method2_content.get("response")
 
             try:
-                correct_ans: Optional[str] = (
+                correct_ans: str | None = (
                     benchmark.get(dataset.name, {}).get(file_id, {}).get("answer")
                 )
                 if not correct_ans:
@@ -127,11 +137,11 @@ def find_diff(
 
 
 def main() -> None:
-    if not os.path.exists(RESULTS_DIR):
+    if not os.path.exists(path=RESULTS_DIR):
         print(f"❌ Error: Directory '{RESULTS_DIR}' does not exist")
         sys.exit(1)
 
-    if not os.path.exists(BENCHMARK_FILE):
+    if not os.path.exists(path=BENCHMARK_FILE):
         print(f"❌ Error: File '{BENCHMARK_FILE}' does not exist")
         sys.exit(1)
 
@@ -145,19 +155,19 @@ Usage Example:
         """,
     )
 
-    parser.add_argument(
+    _ = parser.add_argument(
         "method1",
         type=str,
         help="Prefix of the first method (e.g., 'native-qwen3-235b').",
     )
 
-    parser.add_argument(
+    _ = parser.add_argument(
         "method2",
         type=str,
         help="Prefix of the second method (e.g., 'rag-qwen3-235b').",
     )
 
-    parser.add_argument(
+    _ = parser.add_argument(
         "--check",
         action="store_true",
         help="If enabled, shows all differences even if neither method found the correct answer.",
@@ -166,8 +176,8 @@ Usage Example:
     args: argparse.Namespace = parser.parse_args()
 
     find_diff(
-        Path(RESULTS_DIR),
-        load_json(BENCHMARK_FILE) or {},
+        results=Path(RESULTS_DIR),
+        benchmark=load_json(file_path=BENCHMARK_FILE) or {},
         args.method1,
         args.method2,
         args.check,

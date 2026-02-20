@@ -5,10 +5,12 @@ pipeline.
 """
 
 from graphygie.chat import Chattable, Chat
-from typing import Any, Callable, Optional
+from typing import Callable, override
 
 import logging
 import time
+
+from util import Serializable
 
 
 class BasicGenerator(Chattable):
@@ -41,13 +43,15 @@ class BasicGenerator(Chattable):
         self._generator: Chattable = generator
         self._chat: Chat = chat
         self._maker: Callable[[Chat, str], Chat] = maker
-        self._info: Optional[dict[str, Any]] = None
+        self._info: dict[str, Serializable] | None = None
 
-    def info(self) -> Optional[dict[str, Any]]:
+    @override
+    def info(self) -> dict[str, Serializable] | None:
         return self._info
 
-    def chat(self, chat: Chat = list()) -> str:
-        logger: logging.Logger = logging.getLogger(__name__)
+    @override
+    def chat(self, chat: Chat) -> str:
+        logger: logging.Logger = logging.getLogger(name=__name__)
         self._info = {
             "name": self.__class__.__name__,
         }
@@ -57,7 +61,7 @@ class BasicGenerator(Chattable):
         info: str = self._retriever.chat(chat)
         self._info["retriever"] = self._retriever.info()
 
-        logger.info(info)
+        logger.info(msg=info)
 
         chat = self._maker(self._chat, info) + chat
 

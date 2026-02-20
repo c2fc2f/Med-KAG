@@ -2,8 +2,9 @@
 This module integrates the Ollama client to generate vector embeddings.
 """
 
-from typing import Any, List, Optional
+from typing import Any, override
 from ollama import Client, EmbedResponse
+from util import Serializable
 from .embedding import Embedding
 from .embedder import Embedder
 
@@ -25,19 +26,21 @@ class Ollama(Embedder):
     def __init__(
         self,
         model: str,
-        host: Optional[str] = None,
-        model_params: Optional[dict[str, Any]] = None,
+        host: str | None = None,
+        model_params: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         self._client: Client = Client(host, **kwargs)
         self._model: str = model
-        self._model_params: Optional[dict[str, Any]] = model_params
-        self._info: Optional[dict[str, Any]] = None
+        self._model_params: dict[str, Any] | None = model_params
+        self._info: dict[str, Serializable] | None = None
 
-    def info(self) -> Optional[dict[str, Any]]:
+    @override
+    def info(self) -> dict[str, Serializable] | None:
         return self._info
 
-    def embeds(self, inputs: List[str] = list()) -> List[Embedding]:
+    @override
+    def embeds(self, inputs: list[str]) -> list[Embedding]:
         """
         Generates embeddings for the provided text inputs using Ollama.
 
