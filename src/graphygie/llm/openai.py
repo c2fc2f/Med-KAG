@@ -15,6 +15,7 @@ from openai.types.chat import (
 )
 from openai.types.shared_params.function_definition import FunctionDefinition
 from graphygie.chat import Chattable, Chat, Message
+from graphygie.info.info import Info
 from .tools.tool import Tool
 
 import json
@@ -148,5 +149,7 @@ class OpenAI(Chattable):
 
         logger.info(res)
         if self._cleaner is not None:
-            return self._cleaner(res)
+            res = self._cleaner(res)
+            if isinstance(self._cleaner, Info):
+                self._info["cleaner"] = self._cleaner.info()
         return res
