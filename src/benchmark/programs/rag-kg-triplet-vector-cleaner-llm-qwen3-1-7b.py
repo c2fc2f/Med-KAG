@@ -10,7 +10,7 @@ from graphygie.chat import Chattable, Message
 from graphygie.retrieval import Graph
 from graphygie.retrieval.database import Database
 from graphygie.retrieval.database.neo4j import Neo4j
-from graphygie.retrieval.database.neo4j.converter import Summary, Triplet
+from graphygie.retrieval.database.neo4j.converter import Triplet
 from graphygie.retrieval.database.neo4j.cypher.vector import Vector2Cypher
 from util import (
     Serializable,
@@ -42,10 +42,6 @@ PROMPT_SYSTEM: str = os.path.join(
 PROMPT_CLEANER: str = os.path.join(
     CURRENT_DIR,
     "../resources/prompt/cleaner-llm.md",
-)
-PROMPT_SUMMARIZER: str = os.path.join(
-    CURRENT_DIR,
-    "../resources/prompt/summarizer-llm.md",
 )
 
 
@@ -98,25 +94,7 @@ def base_grahygie(choices_keys: list[str]) -> tuple[Graph, Chattable]:
         username=NEO4J_USERNAME,
         password=NEO4J_PASSWORD,
         database=NEO4J_DATABASE,
-        converter=Summary(
-            converter=Triplet(),
-            summarizer=Ollama(
-                host=OLLAMA_URI,
-                model="qwen3:1.7b",
-                model_params={
-                    "options": {
-                        "temperature": 0.0,
-                        "num_ctx": 8192,
-                    },
-                },
-                chat=[
-                    Message(
-                        role="system",
-                        content=read_to_string(path=PROMPT_SUMMARIZER),
-                    )
-                ],
-            ),
-        ),
+        converter=Triplet(),
         excluded_properties=[
             "embedding",
         ],
@@ -175,7 +153,7 @@ def main() -> None:
     os.makedirs(name=RESULTS_DIR, exist_ok=True)
 
     benchmark(
-        name="rag-kg-vector-summary-cleaner-llm-qwen3-1.7b",
+        name="rag-kg-triplet-vector-cleaner-llm-qwen3-1.7b",
         results_dir=RESULTS_DIR,
         bench=json.load(
             fp=open(

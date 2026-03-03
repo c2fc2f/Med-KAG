@@ -102,7 +102,7 @@ def main() -> None:
 
     (retrieval, generator_llm) = base_grahygie()
     benchmark(
-        name="rag-kg-vector-qwen3-1.7b",
+        name="rag-kg-triplet-vector-qwen3-1.7b",
         results_dir=RESULTS_DIR,
         bench=json.load(
             fp=open(

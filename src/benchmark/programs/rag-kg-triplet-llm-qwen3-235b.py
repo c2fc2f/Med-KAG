@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 from benchmark.util import benchmark, system_prompt, parse_k_argument
 from graphygie.generation.basic_generator import BasicGenerator
-from graphygie.llm import Ollama
+from graphygie.llm import OpenAI
 from graphygie.chat import Chattable, Message
 from graphygie.retrieval import Graph
 from graphygie.retrieval.database import Database
@@ -26,7 +26,8 @@ NEO4J_USERNAME: str = unwrap(value=os.getenv("NEO4J_USERNAME"))
 NEO4J_PASSWORD: str = unwrap(value=os.getenv("NEO4J_PASSWORD"))
 NEO4J_DATABASE: str = unwrap(value=os.getenv("NEO4J_DATABASE"))
 
-OLLAMA_URI: str = unwrap(value=os.getenv("OLLAMA_URI"))
+OPENAI_URI: str = unwrap(value=os.getenv("OPENAI_URI"))
+OPENAI_TOKEN: str = unwrap(value=os.getenv("OPENAI_TOKEN"))
 
 CURRENT_DIR: str = os.path.dirname(os.path.abspath(__file__))
 RESULTS_DIR: str = os.path.join(CURRENT_DIR, "../results")
@@ -52,9 +53,13 @@ def base_grahygie() -> tuple[Graph, Chattable]:
         ],
     )
 
-    retrieval_llm: Chattable = Ollama(
-        host=OLLAMA_URI,
-        model="qwen3:1.7b",
+    retrieval_llm: Chattable = OpenAI(
+        host=OPENAI_URI,
+        api_key=OPENAI_TOKEN,
+        model="qwen/qwen3-235b-a22b:free",
+        model_params={
+            "temperature": 0,
+        },
         chat=[
             Message(
                 role="system",
@@ -62,23 +67,16 @@ def base_grahygie() -> tuple[Graph, Chattable]:
             )
         ],
         cleaner=compose(strip_code_fences, strip_after_double_newline),
-        model_params={
-            "options": {
-                "temperature": 0.0,
-            },
-        },
     )
 
     retrieval: Graph = Graph(query_gen=retrieval_llm, database=database)
 
-    generator_llm: Chattable = Ollama(
-        host=OLLAMA_URI,
-        model="qwen3:1.7b",
+    generator_llm: Chattable = OpenAI(
+        host=OPENAI_URI,
+        api_key=OPENAI_TOKEN,
+        model="qwen/qwen3-235b-a22b:free",
         model_params={
-            "options": {
-                "temperature": 0.0,
-                "num_ctx": 8192,
-            },
+            "temperature": 0,
         },
         cleaner=lambda s: s[0] if len(s) > 0 else s,
     )
@@ -110,7 +108,7 @@ def main() -> None:
 
     (retrieval, generator_llm) = base_grahygie()
     benchmark(
-        name="rag-kg-llm-qwen3-1.7b",
+        name="rag-kg-triplet-llm-qwen3-235b",
         results_dir=RESULTS_DIR,
         bench=json.load(
             fp=open(
