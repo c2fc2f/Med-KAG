@@ -27,12 +27,12 @@ class Ollama(Embedder):
         self,
         model: str,
         host: str | None = None,
-        model_params: dict[str, Any] | None = None,
-        **kwargs: Any,
+        model_params: dict[str, Any] | None = None,  # pyright: ignore[reportExplicitAny]
+        **kwargs: Any,  # pyright: ignore[reportAny, reportExplicitAny]
     ) -> None:
-        self._client: Client = Client(host, **kwargs)
+        self._client: Client = Client(host, **kwargs)  # pyright: ignore[reportAny]
         self._model: str = model
-        self._model_params: dict[str, Any] | None = model_params
+        self._model_params: dict[str, Any] | None = model_params  # pyright: ignore[reportExplicitAny]
         self._info: dict[str, Serializable] | None = None
 
     @override
@@ -55,7 +55,7 @@ class Ollama(Embedder):
         response: EmbedResponse = self._client.embed(
             model=self._model,
             input=inputs,
-            **(self._model_params or {}),
+            **(self._model_params or {}),  # pyright: ignore[reportAny]
         )
 
         end: float = time.perf_counter()

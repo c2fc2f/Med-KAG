@@ -41,8 +41,8 @@ class OpenAI(Chattable):
         host: str | None = None,
         tools: list[Tool] | None = None,
         cleaner: Callable[[str], str] | None = None,
-        model_params: dict[str, Any] | None = None,
-        **kwargs: Any,
+        model_params: dict[str, Any] | None = None,  # pyright: ignore[reportExplicitAny]
+        **kwargs: Any,  # pyright: ignore[reportAny, reportExplicitAny]
     ) -> None:
         """
         Initializes the OpenAI LLM client.
@@ -63,13 +63,15 @@ class OpenAI(Chattable):
         """
 
         self._client: openai.OpenAI = openai.OpenAI(
-            base_url=host, api_key=api_key, **kwargs
+            base_url=host,
+            api_key=api_key,
+            **kwargs,  # pyright: ignore[reportAny]
         )
         self._model: str = model
         self._chat: Chat | None = chat
         self._tools: list[Tool] | None = tools
         self._cleaner: Callable[[str], str] | None = cleaner
-        self._model_params: dict[str, Any] | None = model_params
+        self._model_params: dict[str, Any] | None = model_params  # pyright: ignore[reportExplicitAny]
         self._info: dict[str, Serializable] | None = None
 
     @override
@@ -92,7 +94,7 @@ class OpenAI(Chattable):
                 cast(
                     ChatCompletionMessageParam,
                     message,
-                )
+                )  # pyright: ignore[reportInvalidCast]
                 for message in chat
             ],
             tools=[
@@ -107,7 +109,8 @@ class OpenAI(Chattable):
                 )
                 for tool in self._tools or []
             ],
-            **(self._model_params or {}),
+            stream=False,
+            **(self._model_params or {}),  # pyright: ignore[reportAny]
         )
         res: str = response.choices[0].message.content or ""
         while response.choices[0].message.tool_calls is not None:
@@ -120,7 +123,7 @@ class OpenAI(Chattable):
             for call in response.choices[0].message.tool_calls:
                 if not isinstance(call, ChatCompletionMessageFunctionToolCall):
                     continue
-                func: Callable[..., Any] | None = next(
+                func: Callable[..., object] | None = next(
                     (
                         tool
                         for tool in self._tools or []
@@ -140,13 +143,13 @@ class OpenAI(Chattable):
                         tool_name=call.function.name,
                     )
                 )
-            response: ChatCompletion = self._client.chat.completions.create(
+            response = self._client.chat.completions.create(
                 model=self._model,
                 messages=[
                     cast(
                         ChatCompletionMessageParam,
                         message,
-                    )
+                    )  # pyright: ignore[reportInvalidCast]
                     for message in chat
                 ],
                 tools=[
@@ -154,14 +157,15 @@ class OpenAI(Chattable):
                         function=FunctionDefinition(
                             name=tool.name,
                             description=tool.description,
-                            parameters=asdict(tool.parameters),
+                            parameters=asdict(obj=tool.parameters),
                             strict=True,
                         ),
                         type="function",
                     )
                     for tool in self._tools or []
                 ],
-                **(self._model_params or {}),
+                stream=False,
+                **(self._model_params or {}),  # pyright: ignore[reportAny]
             )
             res = response.choices[0].message.content or ""
 

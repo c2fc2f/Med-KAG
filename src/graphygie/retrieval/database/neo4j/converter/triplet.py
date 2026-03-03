@@ -49,7 +49,7 @@ class Triplet:
             node_labels[node.id] = name
             node_properties[node.id] = {
                 k: v
-                for k, v in dict(node).items()
+                for k, v in dict(node).items()  # pyright: ignore[reportAny]
                 if k not in ["name", "title"] + excluded_properties
             }
 

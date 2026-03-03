@@ -59,8 +59,8 @@ class ToolFunction(Generic[T]):
         Parameters:
         - func (Callable): The original function to wrap.
         """
-        self._func: Callable[..., T] = func
-        self._doc: Docstring = parse(self._func.__doc__ or "")
+        self.func: Callable[..., T] = func
+        self._doc: Docstring = parse(self.func.__doc__ or "")
 
     def __call__(self, *args: object, **kwds: object) -> T:
         """
@@ -73,7 +73,7 @@ class ToolFunction(Generic[T]):
         Returns:
         - Any: The result returned by the wrapped function.
         """
-        return self._func(*args, **kwds)
+        return self.func(*args, **kwds)
 
     @property
     def description(self) -> str:
@@ -93,7 +93,7 @@ class ToolFunction(Generic[T]):
         Returns:
         - str: The identifier name of the function.
         """
-        return self._func.__name__
+        return self.func.__name__
 
     @property
     def parameters(self) -> Parameters:

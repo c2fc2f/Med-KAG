@@ -6,7 +6,7 @@ readable text.
 
 from neo4j import Driver, GraphDatabase, Result
 from neo4j.graph import Graph
-from typing import Any, Callable, LiteralString, cast, override
+from typing import Callable, LiteralString, cast, override
 from graphygie.info import Info
 from graphygie.retrieval.database import Database
 from util import Serializable
@@ -63,7 +63,12 @@ class Neo4j(Database):
         return self._info
 
     @override
-    def query(self, query: str, **kwargs: Any) -> str:
+    def query(
+        self,
+        query: str,
+        parameters: dict[str, object] | None = None,
+        **kwargs: object,
+    ) -> str:
         startt: float = time.perf_counter()
 
         self._driver.verify_connectivity()  # pyright: ignore[reportUnknownMemberType]
@@ -73,6 +78,7 @@ class Neo4j(Database):
             try:
                 result: Result = session.run(
                     query=cast(LiteralString, query),
+                    parameters=parameters,
                     **kwargs,
                 )
             except:

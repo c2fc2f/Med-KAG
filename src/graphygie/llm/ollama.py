@@ -32,8 +32,8 @@ class Ollama(Chattable):
         host: str | None = None,
         tools: list[Tool] | None = None,
         cleaner: Callable[[str], str] | None = None,
-        model_params: dict[str, Any] | None = None,
-        **kwargs: Any,
+        model_params: dict[str, Any] | None = None,  # pyright: ignore[reportExplicitAny]
+        **kwargs: Any,  # pyright: ignore[reportAny, reportExplicitAny]
     ) -> None:
         """
         Initializes the Ollama LLM client.
@@ -52,12 +52,12 @@ class Ollama(Chattable):
         - **kwargs: Additional keyword arguments passed to the Ollama client.
         """
 
-        self._client: Client = Client(host, **kwargs)
+        self._client: Client = Client(host, **kwargs)  # pyright: ignore[reportAny]
         self._model: str = model
         self._chat: Chat | None = chat
         self._tools: list[Tool] | None = tools
         self._cleaner: Callable[[str], str] | None = cleaner
-        self._model_params: dict[str, Any] | None = model_params
+        self._model_params: dict[str, Any] | None = model_params  # pyright: ignore[reportExplicitAny]
         self._info: dict[str, Serializable] | None = None
 
     @override
@@ -74,7 +74,7 @@ class Ollama(Chattable):
 
         start: float = time.perf_counter()
 
-        response: ChatResponse = self._client.chat(
+        response: ChatResponse = self._client.chat(  # pyright: ignore[reportUnknownMemberType]
             model=self._model,
             messages=chat,
             tools=[
@@ -83,12 +83,13 @@ class Ollama(Chattable):
                     "function": {
                         "name": tool.name,
                         "description": tool.description,
-                        "parameters": asdict(tool.parameters),
+                        "parameters": asdict(obj=tool.parameters),
                     },
                 }
                 for tool in self._tools or []
             ],
-            **(self._model_params or {}),
+            stream=False,
+            **(self._model_params or {}),  # pyright: ignore[reportAny]
         )
         res: str = response.message.content or ""
         while response.message.tool_calls is not None:
@@ -99,7 +100,7 @@ class Ollama(Chattable):
                 )
             )
             for call in response.message.tool_calls:
-                func: Callable[..., Any] | None = next(
+                func: Callable[..., object] | None = next(
                     (
                         tool
                         for tool in self._tools or []
@@ -107,7 +108,7 @@ class Ollama(Chattable):
                     ),
                     None,
                 )
-                result = func(**call.function.arguments) if func is not None else ""
+                result = func(**call.function.arguments) if func is not None else ""  # pyright: ignore[reportAny]
                 chat.append(
                     Message(
                         role="tool",
@@ -115,11 +116,12 @@ class Ollama(Chattable):
                         tool_name=call.function.name,
                     )
                 )
-            response = self._client.chat(
+            response = self._client.chat(  # pyright: ignore[reportUnknownMemberType]
                 model=self._model,
                 messages=chat,
-                tools=[tool._func for tool in self._tools or []],
-                **(self._model_params or {}),
+                tools=[tool.func for tool in self._tools or []],
+                stream=False,
+                **(self._model_params or {}),  # pyright: ignore[reportAny]
             )
             res = response.message.content or ""
 
