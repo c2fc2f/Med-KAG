@@ -1,7 +1,9 @@
-from typing import Callable
+from typing import Callable, TypeVar
+
+T = TypeVar("T")
 
 
-def compose(*functions: Callable[[str], str]) -> Callable[[str], str]:
+def compose(*functions: Callable[[T], T]) -> Callable[[T], T]:
     """
     Compose multiple functions into one (left to right execution).
 
@@ -12,9 +14,9 @@ def compose(*functions: Callable[[str], str]) -> Callable[[str], str]:
         A new function that applies all functions in sequence.
     """
 
-    def composed(text: str) -> str:
+    def composed(temp: T) -> T:
         for func in functions:
-            text = func(text)
-        return text
+            temp = func(temp)
+        return temp
 
     return composed

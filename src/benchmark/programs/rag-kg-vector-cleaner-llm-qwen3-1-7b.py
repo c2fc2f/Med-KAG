@@ -10,6 +10,7 @@ from graphygie.chat import Chattable, Message
 from graphygie.retrieval import Graph
 from graphygie.retrieval.database import Database
 from graphygie.retrieval.database.neo4j import Neo4j
+from graphygie.retrieval.database.neo4j.converter import Triplet
 from graphygie.retrieval.database.neo4j.cypher.vector import Vector2Cypher
 from util import (
     Serializable,
@@ -35,9 +36,13 @@ RESULTS_DIR: str = os.path.join(CURRENT_DIR, "../results")
 BENCHMARK_FILE: str = os.path.join(CURRENT_DIR, "../benchmark.json")
 PROMPT_USER: str = os.path.join(CURRENT_DIR, "../resources/prompt/user.md")
 PROMPT_SYSTEM: str = os.path.join(
-    CURRENT_DIR, "../resources/prompt/generator_system_rag_kg-vector-cleaner-llm.md"
+    CURRENT_DIR,
+    "../resources/prompt/generator_system_rag_kg-vector-cleaner-llm.md",
 )
-PROMPT_CLEANER: str = os.path.join(CURRENT_DIR, "../resources/prompt/cleaner-llm.md")
+PROMPT_CLEANER: str = os.path.join(
+    CURRENT_DIR,
+    "../resources/prompt/cleaner-llm.md",
+)
 
 
 class CleanerLLM(Info):
@@ -89,6 +94,7 @@ def base_grahygie(choices_keys: list[str]) -> tuple[Graph, Chattable]:
         username=NEO4J_USERNAME,
         password=NEO4J_PASSWORD,
         database=NEO4J_DATABASE,
+        converter=Triplet(),
         excluded_properties=[
             "embedding",
         ],
@@ -153,7 +159,7 @@ def main() -> None:
             fp=open(
                 file=BENCHMARK_FILE,
             ),
-        ),
+        ),  # pyright: ignore[reportAny]
         base=read_to_string(path=PROMPT_USER),
         model=lambda choices: graphygie(
             choices_keys=choices,

@@ -1,4 +1,5 @@
-from typing import Any, Callable
+from collections.abc import Iterator
+from typing import Callable, TypedDict
 from itertools import dropwhile
 from .user_prompt import user_prompt
 from graphygie.chat import Chattable, Message
@@ -12,8 +13,21 @@ import logging
 import time
 
 
+class Entry(TypedDict):
+    question: str
+    options: dict[str, str]
+    answer: str
+
+
+type Dataset = dict[str, Entry]
+type Benchmark = dict[str, Dataset]
+
+
 def run(
-    base: str, generator: Chattable, question: str, choices: dict[str, str]
+    base: str,
+    generator: Chattable,
+    question: str,
+    choices: dict[str, str],
 ) -> dict[str, Serializable]:
     data: dict[str, Serializable] = dict()
 
@@ -38,7 +52,7 @@ def run(
 def benchmark(
     name: str,
     results_dir: str,
-    bench: dict[str, Any],
+    bench: Benchmark,
     base: str,
     model: Callable[[list[str]], Chattable],
     start: tuple[str, str] | None = None,
@@ -47,31 +61,31 @@ def benchmark(
     logger: logging.Logger = logging.getLogger(name=__name__)
     logger.info(f"start: {start} - end: {end}")
 
-    iterator = enumerate(bench.items())
-    dcount = len(bench)
+    iterator: Iterator[tuple[int, tuple[str, Dataset]]] = enumerate(bench.items())
+    dcount: int = len(bench)
     if start is not None:
         iterator = dropwhile(lambda item: item[1][0] != start[0], iterator)
 
-    for didx, (dataset, val) in iterator:
+    for didx, (dataset_name, dataset) in iterator:
         print(
-            f"Start of the {dataset} ({didx + 1}/{dcount}) dataset at {datetime.now()}"
+            f"Start of the {dataset_name} ({didx + 1}/{dcount}) dataset at {datetime.now()}"
         )
-        os.makedirs(f"{results_dir}/{dataset}", exist_ok=True)
+        os.makedirs(name=f"{results_dir}/{dataset_name}", exist_ok=True)
 
-        sub_iter = enumerate(val.items())
-        qcount: int = len(val)
+        sub_iter: Iterator[tuple[int, tuple[str, Entry]]] = enumerate(dataset.items())
+        qcount: int = len(dataset)
 
-        if start is not None and dataset == start[0]:
+        if start is not None and dataset_name == start[0]:
             sub_iter = dropwhile(lambda item: item[1][0] != start[1], sub_iter)
 
-        for qidx, (question, val) in sub_iter:
+        for qidx, (question_name, question) in sub_iter:
             print(
-                f"Start of the {question} ({qidx + 1}/{qcount}) question at {datetime.now()}"
+                f"Start of the {question_name} ({qidx + 1}/{qcount}) question at {datetime.now()}"
             )
-            llm = model(val["options"].keys())
+            llm: Chattable = model(list(question["options"].keys()))
 
             with open(
-                file=f"{results_dir}/{dataset}/{name}_{question}.json",
+                file=f"{results_dir}/{dataset_name}/{name}_{question_name}.json",
                 mode="w",
                 encoding="utf-8",
             ) as f:
@@ -80,8 +94,8 @@ def benchmark(
                         data: dict[str, Serializable] = run(
                             base,
                             generator=llm,
-                            question=val["question"],
-                            choices=val["options"],
+                            question=question["question"],
+                            choices=question["options"],
                         )
                         break
                     except Exception as e:
@@ -97,7 +111,7 @@ def benchmark(
                     ensure_ascii=False,
                 )
 
-            if end is not None and dataset == end[0] and question == end[1]:
+            if end is not None and dataset_name == end[0] and question_name == end[1]:
                 return
 
 

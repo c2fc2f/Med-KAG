@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any 
+from typing import Any
 
 import argparse
 import os
@@ -8,7 +8,7 @@ import re
 import json
 import sys
 
-from util import Serializable
+from benchmark.util.benchmark import Benchmark
 
 CURRENT_DIR: str = os.path.dirname(os.path.abspath(__file__))
 RESULTS_DIR: str = os.path.join(CURRENT_DIR, "../results")
@@ -21,11 +21,11 @@ class Pair:
     method2: Path | None = None
 
 
-def load_json(file_path: str | Path) -> Any | None:
+def load_json(file_path: str | Path) -> Any | None:  # pyright: ignore[reportExplicitAny]
     """Helper function to load a JSON file."""
     try:
         with open(file=file_path, mode="r", encoding="utf-8") as f:
-            return json.load(fp=f)
+            return json.load(fp=f)  # pyright: ignore[reportAny]
     except Exception as e:
         print(f"Error loading {file_path}: {e}", file=sys.stderr)
         return None
@@ -33,7 +33,7 @@ def load_json(file_path: str | Path) -> Any | None:
 
 def find_diff(
     results: Path,
-    benchmark: dict[str, Serializable],
+    benchmark: Benchmark,
     method1: str,
     method2: str,
     check: bool,
@@ -86,8 +86,12 @@ def find_diff(
             if file_pair.method1 is None or file_pair.method2 is None:
                 continue
 
-            method1_content: dict[str, str] | None = load_json(file_path=file_pair.method1)
-            method2_content: dict[str, str] | None = load_json(file_path=file_pair.method2)
+            method1_content: dict[str, str] | None = load_json(
+                file_path=file_pair.method1
+            )
+            method2_content: dict[str, str] | None = load_json(
+                file_path=file_pair.method2
+            )
 
             if method1_content is None or method2_content is None:
                 continue
@@ -96,9 +100,7 @@ def find_diff(
             method2_ans: str | None = method2_content.get("response")
 
             try:
-                correct_ans: str | None = (
-                    benchmark.get(dataset.name, {}).get(file_id, {}).get("answer")
-                )
+                correct_ans: str = benchmark[dataset.name][file_id]["answer"]
                 if not correct_ans:
                     continue
             except AttributeError:
@@ -178,9 +180,9 @@ Usage Example:
     find_diff(
         results=Path(RESULTS_DIR),
         benchmark=load_json(file_path=BENCHMARK_FILE) or {},
-        args.method1,
-        args.method2,
-        args.check,
+        method1=args.method1,  # pyright: ignore[reportAny]
+        method2=args.method2,  # pyright: ignore[reportAny]
+        check=args.check,  # pyright: ignore[reportAny]
     )
 
 

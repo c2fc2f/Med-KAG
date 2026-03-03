@@ -14,6 +14,7 @@ queries. The process follows these steps:
 7. Format the user prompt and generate the final response.
 """
 
+from graphygie.retrieval.database.neo4j.converter import Triplet
 from langchain_ollama.embeddings import OllamaEmbeddings
 from neo4j import Driver, GraphDatabase, Result
 from graphygie.llm.tools import tool
@@ -95,6 +96,7 @@ def main() -> None:
         username=NEO4J_USERNAME,
         password=NEO4J_PASSWORD,
         database=NEO4J_DATABASE,
+        converter=Triplet(),
         excluded_properties=["embedding"],
     )
 

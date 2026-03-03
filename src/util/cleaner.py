@@ -2,7 +2,7 @@ import re
 
 # Matches an entire string wrapped in triple backticks, optionally with a
 # language tag.
-_CODE_FENCE_RE = re.compile(
+_CODE_FENCE_RE: re.Pattern[str] = re.compile(
     r"[\s\S]*```(?:\S*)?\n(.*?)\n```[\s\S]*$",
     re.DOTALL,
 )

@@ -68,15 +68,15 @@ class Ollama(Chattable):
     def chat(self, chat: Chat) -> str:
         logger: logging.Logger = logging.getLogger(name=__name__)
 
-        chat = self._chat or [] + chat
+        chat = (self._chat or []) + chat
 
-        logging.info([message.to_dict() for message in chat])
+        logging.info(chat)
 
         start: float = time.perf_counter()
 
         response: ChatResponse = self._client.chat(
             model=self._model,
-            messages=[message.to_dict() for message in chat],
+            messages=chat,
             tools=[
                 {
                     "type": "function",
@@ -92,9 +92,14 @@ class Ollama(Chattable):
         )
         res: str = response.message.content or ""
         while response.message.tool_calls is not None:
-            chat.append(Message(response.message.role, res))
+            chat.append(
+                Message(
+                    role=response.message.role,
+                    content=res,
+                )
+            )
             for call in response.message.tool_calls:
-                func: Callable | None = next(
+                func: Callable[..., Any] | None = next(
                     (
                         tool
                         for tool in self._tools or []
@@ -103,10 +108,16 @@ class Ollama(Chattable):
                     None,
                 )
                 result = func(**call.function.arguments) if func is not None else ""
-                chat.append(Message("tool", str(result), tool_name=call.function.name))
+                chat.append(
+                    Message(
+                        role="tool",
+                        content=str(result),
+                        tool_name=call.function.name,
+                    )
+                )
             response = self._client.chat(
                 model=self._model,
-                messages=[message.to_dict() for message in chat],
+                messages=chat,
                 tools=[tool._func for tool in self._tools or []],
                 **(self._model_params or {}),
             )

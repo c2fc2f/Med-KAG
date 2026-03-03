@@ -55,7 +55,7 @@ def main() -> None:
             fp=open(
                 file=BENCHMARK_FILE,
             ),
-        ),
+        ),  # pyright: ignore[reportAny]
         base=read_to_string(path=PROMPT_USER),
         model=native,
         start=parse_k_argument(k=1),

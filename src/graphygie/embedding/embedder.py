@@ -39,6 +39,6 @@ class Embedder(Chattable, ABC):
         return "\n".join(
             " ".join(str(em) for em in e)
             for e in self.embeds(
-                [f"Role: {m.role}\nMessage: {m.content}" for m in chat]
+                [f"Role: {m['role']}\nMessage: {m['content']}" for m in chat]
             )
         )

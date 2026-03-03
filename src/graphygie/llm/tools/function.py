@@ -4,9 +4,11 @@ consumable by an LLM. It defines structures to parse docstrings and generate
 schemas (parameters, types, descriptions) required for function calling.
 """
 
-from typing import Callable, Any, Literal
-from docstring_parser import parse
+from typing import Callable, Generic, Literal, TypeVar
+from docstring_parser import Docstring, parse
 from dataclasses import dataclass
+
+T = TypeVar("T")
 
 
 @dataclass()
@@ -43,13 +45,13 @@ class Parameters:
     type: Literal["object"] = "object"
 
 
-class ToolFunction:
+class ToolFunction(Generic[T]):
     """
     Wraps a standard Python function to expose its metadata (name,
     description, parameters) dynamically by parsing its docstring.
     """
 
-    def __init__(self, func: Callable) -> None:
+    def __init__(self, func: Callable[..., T]) -> None:
         """
         Initializes the ToolFunction by parsing the docstring of the provided
         function.
@@ -57,10 +59,10 @@ class ToolFunction:
         Parameters:
         - func (Callable): The original function to wrap.
         """
-        self._func = func
-        self._doc = parse(self._func.__doc__ or "")
+        self._func: Callable[..., T] = func
+        self._doc: Docstring = parse(self._func.__doc__ or "")
 
-    def __call__(self, *args: Any, **kwds: Any) -> Any:
+    def __call__(self, *args: object, **kwds: object) -> T:
         """
         Executes the underlying wrapped function.
 
@@ -114,7 +116,7 @@ class ToolFunction:
         )
 
 
-def tool(func: Callable) -> ToolFunction:
+def tool(func: Callable[..., T]) -> ToolFunction[T]:
     """
     Decorator that converts a standard Python function into a ToolFunction instance,
     enabling it to be used within the tool ecosystem.

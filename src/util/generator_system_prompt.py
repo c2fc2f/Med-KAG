@@ -31,7 +31,7 @@ def generator_system_prompt(chat: Chat, content: str) -> Chat:
 
     message: Message = chat[0]
 
-    if "{{RETRIEVAL}}" not in message.content:
+    if "{{RETRIEVAL}}" not in message["content"]:
         raise ValueError("expected a chat which contains {{RETRIEVAL}}")
 
     if not content:
@@ -39,7 +39,7 @@ def generator_system_prompt(chat: Chat, content: str) -> Chat:
 
     return [
         Message(
-            role=message.role,
-            content=message.content.replace("{{RETRIEVAL}}", content),
+            role=message["role"],
+            content=message["content"].replace("{{RETRIEVAL}}", content),
         )
     ]

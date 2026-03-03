@@ -54,12 +54,19 @@ class Vector2Cypher(Chattable):
         start: float = time.perf_counter()
 
         embed: Embedding = self._embedder.embeds(
-            ["\n\n".join(f"Role: {m.role}\nMessage: {m.content}" for m in chat)]
+            inputs=[
+                "\n\n".join(
+                    f"Role: {m['role']}\nMessage: {m['content']}" for m in chat
+                ),
+            ]
         )[0]
 
-        self._info["embedder"] = unwrap_or(self._embedder.info(), dict())
+        self._info["embedder"] = unwrap_or(
+            value=self._embedder.info(),
+            default=dict(),
+        )
 
-        query = f"""\
+        query: str = f"""\
 CALL db.index.vector.queryNodes('{self._index}', {self._top_k}, {embed})
 YIELD node
 MATCH p = (node)-[*0..{self._distance}]-(neighbor)

@@ -19,6 +19,7 @@ from graphygie.info.info import Info
 from util import Serializable
 from .tools.tool import Tool
 
+import openai
 import json
 import time
 
@@ -69,7 +70,7 @@ class OpenAI(Chattable):
         self._tools: list[Tool] | None = tools
         self._cleaner: Callable[[str], str] | None = cleaner
         self._model_params: dict[str, Any] | None = model_params
-        self._info: dict[str, Any] | None = None
+        self._info: dict[str, Serializable] | None = None
 
     @override
     def info(self) -> dict[str, Serializable] | None:
@@ -79,16 +80,20 @@ class OpenAI(Chattable):
     def chat(self, chat: Chat) -> str:
         logger: logging.Logger = logging.getLogger(name=__name__)
 
-        chat = self._chat or [] + chat
+        chat = (self._chat or []) + chat
 
-        logging.info([message.to_dict() for message in chat])
+        logging.info(msg=chat)
 
         start: float = time.perf_counter()
 
         response: ChatCompletion = self._client.chat.completions.create(
             model=self._model,
             messages=[
-                cast(ChatCompletionMessageParam, message.to_dict()) for message in chat
+                cast(
+                    ChatCompletionMessageParam,
+                    message,
+                )
+                for message in chat
             ],
             tools=[
                 ChatCompletionFunctionToolParam(
@@ -106,11 +111,16 @@ class OpenAI(Chattable):
         )
         res: str = response.choices[0].message.content or ""
         while response.choices[0].message.tool_calls is not None:
-            chat.append(Message(response.choices[0].message.role, res))
+            chat.append(
+                Message(
+                    role=response.choices[0].message.role,
+                    content=res,
+                )
+            )
             for call in response.choices[0].message.tool_calls:
                 if not isinstance(call, ChatCompletionMessageFunctionToolCall):
                     continue
-                func: Callable | None = next(
+                func: Callable[..., Any] | None = next(
                     (
                         tool
                         for tool in self._tools or []
@@ -123,11 +133,20 @@ class OpenAI(Chattable):
                     if func is not None
                     else ""
                 )
-                chat.append(Message("tool", str(result), tool_name=call.function.name))
+                chat.append(
+                    Message(
+                        role="tool",
+                        content=str(result),
+                        tool_name=call.function.name,
+                    )
+                )
             response: ChatCompletion = self._client.chat.completions.create(
                 model=self._model,
                 messages=[
-                    cast(ChatCompletionMessageParam, message.to_dict())
+                    cast(
+                        ChatCompletionMessageParam,
+                        message,
+                    )
                     for message in chat
                 ],
                 tools=[

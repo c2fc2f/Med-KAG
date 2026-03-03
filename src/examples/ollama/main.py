@@ -21,6 +21,7 @@ from graphygie.chat import Chattable, Message
 from graphygie.llm import Ollama
 from graphygie.generation import BasicGenerator
 import logging
+from graphygie.retrieval.database.neo4j.converter import Triplet
 from util import (
     read_to_string,
     unwrap,
@@ -58,6 +59,7 @@ def main() -> None:
         username=NEO4J_USERNAME,
         password=NEO4J_PASSWORD,
         database=NEO4J_DATABASE,
+        converter=Triplet(),
     )
 
     # Initialize the Ollama language model

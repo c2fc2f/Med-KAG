@@ -1,7 +1,8 @@
 from pathlib import Path
 from statistics import mean, median, quantiles, stdev
-from typing import Any, List, Mapping, Tuple, Union
 from dataclasses import dataclass
+from typing import Required, TypedDict
+from benchmark.util.benchmark import Benchmark
 from util.serializable import Atome, Serializable
 
 import json
@@ -42,6 +43,11 @@ EMOJI: list[str] = [
 ]
 
 
+class ResultsStats(TypedDict):
+    response: Required[str]
+    stats: Required[dict[str, Serializable]]
+
+
 @dataclass()
 class Stats:
     method: str
@@ -71,7 +77,8 @@ class Stats:
         """
 
         def flatten_and_store(
-            data: Mapping[str, Serializable], prefix: str = ""
+            data: dict[str, Serializable],
+            prefix: str = "",
         ) -> None:
             """Recursively flattens a dictionary into dot-notated paths."""
             for key, value in data.items():
@@ -89,11 +96,11 @@ class Stats:
         flatten_and_store(data=extra)
 
 
-def load_benchmark(benchmark_path: str) -> dict[str, Serializable]:
+def load_benchmark(benchmark_path: str) -> Benchmark:
     """Load the benchmark.json file"""
 
     with open(file=benchmark_path, mode="r", encoding="utf-8") as f:
-        return json.load(fp=f)
+        return json.load(fp=f)  # pyright: ignore[reportAny]
 
 
 def display_one_stats(
@@ -271,7 +278,7 @@ def display_stats(
 def analyze_results(results_dir: str, benchmark_path: str) -> None:
     """Analyze all results"""
 
-    benchmark: dict[str, Serializable] = load_benchmark(benchmark_path)
+    benchmark: Benchmark = load_benchmark(benchmark_path)
 
     stats: dict[str, dict[str, Stats]] = dict()
     methods: list[str] = list()
@@ -314,11 +321,11 @@ def analyze_results(results_dir: str, benchmark_path: str) -> None:
                 continue
 
             with open(file=result_file, mode="r", encoding="utf-8") as f:
-                result: dict[str, str | dict[str, Serializable]] = json.load(fp=f)
+                result: ResultsStats = json.load(fp=f)  # pyright: ignore[reportAny]
 
                 correct: str = benchmark[dataset_name][question_name]["answer"]
-                model_res: str = result.get("response")
-                model_stats: dict[str, Serializable] = result.get("stats")
+                model_res: str = result["response"]
+                model_stats: dict[str, Serializable] = result["stats"]
 
                 if result_type not in stats[dataset_name].keys():
                     stats[dataset_name][result_type] = Stats(

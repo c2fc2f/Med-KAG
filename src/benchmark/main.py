@@ -39,7 +39,7 @@ def load_benchmark_function(module_path: str) -> Callable[[], None]:
     """
     try:
         module: ModuleType = importlib.import_module(name=module_path)
-        return module.main
+        return module.main  # pyright: ignore[reportAny]
     except (ImportError, AttributeError) as e:
         raise ImportError(f"Cannot load module '{module_path}': {e}")
 
@@ -72,8 +72,8 @@ Available benchmarks:
 
     args, remaining_args = parser.parse_known_args()
 
-    function: str = str(args.function)
-    is_logging: bool = bool(args.logging)
+    function: str = str(args.function)  # pyright: ignore[reportAny]
+    is_logging: bool = bool(args.logging)  # pyright: ignore[reportAny]
 
     module_path: str = BENCHMARK_MODULES[function]
     benchmark_func: Callable[[], None] = load_benchmark_function(module_path)
