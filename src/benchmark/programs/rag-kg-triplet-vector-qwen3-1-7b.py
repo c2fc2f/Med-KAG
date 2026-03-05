@@ -57,7 +57,7 @@ def base_grahygie() -> tuple[Graph, Chattable]:
     retrieval_vector: Chattable = Vector2Cypher(
         index="CUI_EMBEDDINGS",
         embedder=embedder,
-        top_k=2,
+        top_k=5,
         distance=1,
     )
 
@@ -79,7 +79,9 @@ def base_grahygie() -> tuple[Graph, Chattable]:
 
 
 def graphygie(
-    retrieval: Graph, generator_llm: Chattable, choices_keys: list[str]
+    retrieval: Graph,
+    generator_llm: Chattable,
+    choices_keys: list[str],
 ) -> BasicGenerator:
     return BasicGenerator(
         retriever=retrieval,
