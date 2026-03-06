@@ -108,7 +108,7 @@ def base_grahygie(choices_keys: list[str]) -> tuple[Graph, Chattable]:
     retrieval_vector: Chattable = Vector2Cypher(
         index="CUI_EMBEDDINGS",
         embedder=embedder,
-        top_k=2,
+        top_k=5,
         distance=1,
     )
 
